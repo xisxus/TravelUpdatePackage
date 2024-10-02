@@ -18,6 +18,33 @@ namespace TravelUpdate.Controllers
             _context = context;
         }
 
+
+        [HttpGet("getlink")]
+        public IActionResult GetLink()
+        {
+            var request = HttpContext.Request;
+
+            // Full URL (including scheme, host, path, and query string)
+           // var fullUrl = $"{request.Scheme}://{request.Host}{request.Path}{request.QueryString}";
+            var fullUrl = $"{request.Path}{request.QueryString}";
+
+            var schme = request.Scheme;
+            var host = request.Host;
+            var path = request.Path;
+            var queryString = request.QueryString;
+
+
+            return Ok(new { 
+                scheme = schme, 
+                host = host,
+                path = path,
+                queryString = queryString
+            });
+        }
+
+
+
+
         // GET: api/Seats/get-all
         [HttpGet("get-all")]
         public async Task<IActionResult> GetAllSeats()

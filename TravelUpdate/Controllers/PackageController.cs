@@ -1397,7 +1397,7 @@ namespace TravelUpdate.Controllers
                 IndividualPackageCost = individualPackageCost
             });
         }
-
+        [HttpGet]
         public async Task<IActionResult> CalculateAndInsertCosts(int packageId)
         {
             var schedules = await _context.Schedule
