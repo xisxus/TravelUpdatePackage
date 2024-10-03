@@ -97,11 +97,11 @@ namespace TravelUpdate.Dal
                 .HasForeignKey(sc => sc.PackageCategoryID);
 
 
-            modelBuilder.Entity<TourVoucher>()
-                .HasOne(tv => tv.Package)
-                .WithMany(p => p.TourVouchers)
-                .HasForeignKey(tv => tv.PackageID)
-                .OnDelete(DeleteBehavior.Restrict); 
+            //modelBuilder.Entity<TourVoucher>()
+            //    .HasOne(tv => tv.Package)
+            //    .WithMany(p => p.TourVouchers)
+            //    .HasForeignKey(tv => tv.PackageID)
+            //    .OnDelete(DeleteBehavior.Restrict); 
 
  
             modelBuilder.Entity<Schedule>()

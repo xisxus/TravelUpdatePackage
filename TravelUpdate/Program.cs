@@ -75,13 +75,13 @@ namespace TravelUpdate
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseStaticFiles();
 
-            // Use Authentication and Authorization middlewares
-            app.UseAuthentication();  // Enable authentication
-            app.UseAuthorization();   // Enable authorization
+            
+            app.UseAuthentication(); 
+            app.UseAuthorization();   
 
             app.MapControllers();
-
             app.Run();
         }
     }

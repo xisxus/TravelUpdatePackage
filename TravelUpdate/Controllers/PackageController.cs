@@ -430,6 +430,7 @@ namespace TravelUpdate.Controllers
             });
         }
 
+
         [HttpPost("add-tour-voucher")]
         public async Task<IActionResult> AddTourVoucher([FromForm] TourVoucherInsertModel model)
         {
@@ -448,7 +449,7 @@ namespace TravelUpdate.Controllers
             var tourVoucher = new TourVoucher
             {
                 TourVoucherCode = model.TourVoucherCode,
-                VoucherUrl = voucherUrl,
+                VoucherUrl = voucherUrl
             };
 
             _context.TourVouchers.Add(tourVoucher);
@@ -459,48 +460,40 @@ namespace TravelUpdate.Controllers
                 success = true,
                 message = "Tour voucher added successfully.",
                 tourVoucherID = tourVoucher.TourVoucherID,
-                packageID = model.PackageID,
                 voucherUrl = voucherUrl
             });
         }
 
-        [HttpGet("get-tour-vouchers/{packageID}")]
-        public async Task<IActionResult> GetTourVouchersByPackageID(int packageID)
+        [HttpGet("get-tour-vouchers")]
+        public async Task<IActionResult> GetTourVouchers()
         {
             var tourVouchers = await _context.TourVouchers
-                .Where(tv => tv.PackageID == packageID)
-                .Select(tv => new GetPackageVoucher
+                .Select(tv => new
                 {
-                    TourVoucherID = tv.TourVoucherID,
-                    TourVoucherCode = tv.TourVoucherCode,
-                    VoucherUrl = tv.VoucherUrl,
-                    PackageID = tv.PackageID
+                    tv.TourVoucherID,
+                    tv.TourVoucherCode,
+                    tv.VoucherUrl
                 })
                 .ToListAsync();
 
-            if (tourVouchers == null || !tourVouchers.Any())
+            if (!tourVouchers.Any())
             {
-                return NotFound(new { success = false, message = "No tour vouchers found for the package." });
+                return NotFound(new { success = false, message = "No tour vouchers found." });
             }
 
             return Ok(tourVouchers);
         }
 
-
-
-
-
-        [HttpGet("get-tour-voucher/{id}/{packageID}")]
-        public async Task<IActionResult> GetTourVoucherById(int id, int packageID)
+        [HttpGet("get-tour-voucher/{id}")]
+        public async Task<IActionResult> GetTourVoucherById(int id)
         {
             var tourVoucher = await _context.TourVouchers
-                .Where(tv => tv.TourVoucherID == id && tv.PackageID == packageID)
-                .Select(tv => new GetPackageVoucher
+                .Where(tv => tv.TourVoucherID == id)
+                .Select(tv => new
                 {
-                    TourVoucherID = tv.TourVoucherID,
-                    TourVoucherCode = tv.TourVoucherCode,
-                    VoucherUrl = tv.VoucherUrl,
-                    PackageID = tv.PackageID
+                    tv.TourVoucherID,
+                    tv.TourVoucherCode,
+                    tv.VoucherUrl
                 })
                 .FirstOrDefaultAsync();
 
@@ -512,26 +505,19 @@ namespace TravelUpdate.Controllers
             return Ok(tourVoucher);
         }
 
-
-
-
         [HttpPut("update-tour-voucher/{id}")]
         public async Task<IActionResult> UpdateTourVoucher(int id, [FromForm] TourVoucherInsertModel model)
         {
-            // Find the existing tour voucher
             var tourVoucher = await _context.TourVouchers.FindAsync(id);
             if (tourVoucher == null)
             {
                 return NotFound(new { success = false, message = "Tour voucher not found." });
             }
 
-            // Update the TourVoucherCode
             tourVoucher.TourVoucherCode = model.TourVoucherCode;
 
-            // Check if a new file is uploaded
             if (model.VoucherFile != null)
             {
-                // Delete the old file if it exists
                 if (!string.IsNullOrEmpty(tourVoucher.VoucherUrl))
                 {
                     var oldFilePath = Path.Combine(_hostEnvironment.WebRootPath, tourVoucher.VoucherUrl);
@@ -541,17 +527,14 @@ namespace TravelUpdate.Controllers
                     }
                 }
 
-                // Save the new voucher file and update the VoucherUrl
-                tourVoucher.VoucherUrl = await SaveVoucher(model.VoucherFile); // Change SaveVoucher to SaveImage if necessary
+                tourVoucher.VoucherUrl = await SaveVoucher(model.VoucherFile);
             }
 
-            // Update the tour voucher in the context
             _context.TourVouchers.Update(tourVoucher);
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, message = "Tour voucher updated successfully.", tourVoucherID = tourVoucher.TourVoucherID });
         }
-
 
         [HttpDelete("delete-tour-voucher/{id}")]
         public async Task<IActionResult> DeleteTourVoucher(int id)
@@ -1307,7 +1290,7 @@ namespace TravelUpdate.Controllers
         }
 
         [HttpPut("update-package-budget-othercost/{packageId}")]
-        public async Task<IActionResult> UpdatePackageBudgetOtherCost(int packageId, [FromBody] decimal otherCost)
+        public async Task<IActionResult> UpdatePackageBudgetOtherCost(int packageId, PackageBudgetInsertModelPart model)
         {
             var packageBudget = await _context.PackageBudgets
                 .FirstOrDefaultAsync(pb => pb.PackageID == packageId);
@@ -1321,7 +1304,9 @@ namespace TravelUpdate.Controllers
                 });
             }
 
-            packageBudget.OtherCost = otherCost;
+            packageBudget.OtherCost = model.OtherCost;
+            packageBudget.ProfitPercent = model.ProfitPercent;
+           
 
             await _context.SaveChangesAsync();
 

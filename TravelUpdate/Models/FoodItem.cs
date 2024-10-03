@@ -6,9 +6,9 @@ namespace TravelUpdate.Models
     public class FoodItem /*: BaseClass*/
     {
         [Key]
-        public int FoodItemID { get; set; } = 1;   
+        public int FoodItemID { get; set; }  
         [Required]
-        public string ItemName { get; set; } = "Parota";       
+        public string ItemName { get; set; }      
         [Required]
         public DateTime CreatedAt { get; set; }=DateTime.Now;
         [Required]

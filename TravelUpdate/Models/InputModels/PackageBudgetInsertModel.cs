@@ -22,4 +22,15 @@ namespace TravelUpdate.Models.InputModels
         public decimal ProfitPercent { get; set; }
     }
 
+    public class PackageBudgetInsertModelPart
+    {
+       
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal OtherCost { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ProfitPercent { get; set; }
+    }
+
 }
