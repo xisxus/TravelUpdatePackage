@@ -6,6 +6,7 @@ using TravelUpdate.Models.InputModels;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TravelUpdate.Models.OutputModels;
 
 namespace TravelUpdate.Controllers
 {
@@ -22,12 +23,21 @@ namespace TravelUpdate.Controllers
 
         // GET: api/Location
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Location>>> GetLocations()
+        public async Task<ActionResult<IEnumerable<LocationDTO>>> GetLocations()
         {
             return await _context.Locations
                 .Include(l => l.State)
                 .Include(l => l.LocationGalleries)
                 .Include(l => l.Hotels)
+                .Select(l => new LocationDTO
+                {
+                    LocationID = l.LocationID,
+                    LocationName = l.LocationName,
+                    StateName = l.State.StateName,
+                    CountryName = l.State.Country.CountryName,
+                    LocationGalleries = l.LocationGalleries.Select(g => g.ImageUrl).ToList(),
+                    HotelNames = l.Hotels.Select(h => h.HotelName).ToList()
+                })
                 .ToListAsync();
         }
 

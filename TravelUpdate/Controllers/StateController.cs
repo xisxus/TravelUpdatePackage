@@ -6,6 +6,7 @@ using TravelUpdate.Models.InputModels;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TravelUpdate.Models.OutputModels;
 
 namespace TravelUpdate.Controllers
 {
@@ -22,10 +23,22 @@ namespace TravelUpdate.Controllers
 
         // GET: api/State
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<State>>> GetStates()
+        public async Task<ActionResult<IEnumerable<StateOutputModel>>> GetStates()
         {
-            return await _context.States.Include(s => s.Country).Include(s => s.Locations).ToListAsync();
+            var states = await _context.States
+                .Include(s => s.Country)
+                .Select(s => new StateOutputModel
+                {
+                    StateID = s.StateID,
+                    StateName = s.StateName,
+                    CountryName = s.Country.CountryName
+                })
+                .ToListAsync();
+
+            return states;
         }
+
+
 
         // GET: api/State/{id}
         [HttpGet("{id}")]
