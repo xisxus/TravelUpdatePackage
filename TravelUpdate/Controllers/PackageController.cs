@@ -22,6 +22,8 @@ namespace TravelUpdate.Controllers
         }
 
 
+        #region team2
+
         [HttpPost("add-package")]
         public async Task<IActionResult> CreatePackage([FromBody] PackageInsertModel model, [FromQuery] string? customUrl = null)
         {
@@ -431,308 +433,9 @@ namespace TravelUpdate.Controllers
         }
 
 
-        [HttpPost("add-tour-voucher")]
-        public async Task<IActionResult> AddTourVoucher([FromForm] TourVoucherInsertModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+        #endregion
 
-            string? voucherUrl = null;
-
-            if (model.VoucherFile != null)
-            {
-                voucherUrl = await SaveVoucher(model.VoucherFile);
-            }
-
-            var tourVoucher = new TourVoucher
-            {
-                TourVoucherCode = model.TourVoucherCode,
-                VoucherUrl = voucherUrl
-            };
-
-            _context.TourVouchers.Add(tourVoucher);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                success = true,
-                message = "Tour voucher added successfully.",
-                tourVoucherID = tourVoucher.TourVoucherID,
-                voucherUrl = voucherUrl
-            });
-        }
-
-        [HttpGet("get-tour-vouchers")]
-        public async Task<IActionResult> GetTourVouchers()
-        {
-            var tourVouchers = await _context.TourVouchers
-                .Select(tv => new
-                {
-                    tv.TourVoucherID,
-                    tv.TourVoucherCode,
-                    tv.VoucherUrl
-                })
-                .ToListAsync();
-
-            if (!tourVouchers.Any())
-            {
-                return NotFound(new { success = false, message = "No tour vouchers found." });
-            }
-
-            return Ok(tourVouchers);
-        }
-
-        [HttpGet("get-tour-voucher/{id}")]
-        public async Task<IActionResult> GetTourVoucherById(int id)
-        {
-            var tourVoucher = await _context.TourVouchers
-                .Where(tv => tv.TourVoucherID == id)
-                .Select(tv => new
-                {
-                    tv.TourVoucherID,
-                    tv.TourVoucherCode,
-                    tv.VoucherUrl
-                })
-                .FirstOrDefaultAsync();
-
-            if (tourVoucher == null)
-            {
-                return NotFound(new { success = false, message = "Tour voucher not found." });
-            }
-
-            return Ok(tourVoucher);
-        }
-
-        [HttpPut("update-tour-voucher/{id}")]
-        public async Task<IActionResult> UpdateTourVoucher(int id, [FromForm] TourVoucherInsertModel model)
-        {
-            var tourVoucher = await _context.TourVouchers.FindAsync(id);
-            if (tourVoucher == null)
-            {
-                return NotFound(new { success = false, message = "Tour voucher not found." });
-            }
-
-            tourVoucher.TourVoucherCode = model.TourVoucherCode;
-
-            if (model.VoucherFile != null)
-            {
-                if (!string.IsNullOrEmpty(tourVoucher.VoucherUrl))
-                {
-                    var oldFilePath = Path.Combine(_hostEnvironment.WebRootPath, tourVoucher.VoucherUrl);
-                    if (System.IO.File.Exists(oldFilePath))
-                    {
-                        System.IO.File.Delete(oldFilePath);
-                    }
-                }
-
-                tourVoucher.VoucherUrl = await SaveVoucher(model.VoucherFile);
-            }
-
-            _context.TourVouchers.Update(tourVoucher);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { success = true, message = "Tour voucher updated successfully.", tourVoucherID = tourVoucher.TourVoucherID });
-        }
-
-        [HttpDelete("delete-tour-voucher/{id}")]
-        public async Task<IActionResult> DeleteTourVoucher(int id)
-        {
-            var tourVoucher = await _context.TourVouchers.FindAsync(id);
-            if (tourVoucher == null)
-            {
-                return NotFound(new { success = false, message = "Tour voucher not found." });
-            }
-
-            if (!string.IsNullOrEmpty(tourVoucher.VoucherUrl))
-            {
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Vouchers");
-                var filePath = Path.Combine(uploadsFolder, Path.GetFileName(tourVoucher.VoucherUrl));
-
-                if (System.IO.File.Exists(filePath))
-                {
-                    System.IO.File.Delete(filePath);
-                }
-            }
-
-            _context.TourVouchers.Remove(tourVoucher);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { success = true, message = "Tour voucher deleted successfully." });
-        }
-
-
-        [HttpPost("add-schedule")]
-        public async Task<IActionResult> AddSchedule([FromBody] ScheduleInsertModel model, string? customUrl = null)
-        {
-
-            var schedule = new Schedule
-            {
-                // ScheduleID should not be set
-                TourVoucherID = model.TourVoucherID,
-                ScheduleTitle = model.ScheduleTitle,
-                ScheduleDescription = model.ScheduleDescription,
-                PackageID = model.PackageID,
-                DayNumber = model.DayNumber,
-                TentativeTime = model.TentativeTime,
-                ActualTime = model.ActualTime,
-                TentativeCost = model.TentativeCost,
-                ActualCost = model.ActualCost,
-                //Category = model.Category
-
-            };
-
-
-
-            await _context.Schedule.AddAsync(schedule); 
-            await _context.SaveChangesAsync(); 
-
-            var url = customUrl ?? "getpackage"; 
-            return Ok(new
-            {
-                success = true,
-                message = "Schedule added successfully.",
-                scheduleID = schedule.ScheduleID, 
-                packageID = schedule.PackageID,
-                url
-            });
-        }
-
-        [HttpGet("get-schedules/{packageID}")]
-        public async Task<IActionResult> GetSchedulesByPackageID(int packageID)
-        {
-            var schedules = await _context.Schedule
-                .Where(s => s.PackageID == packageID)
-                .Select(s => new
-                {
-                    s.ScheduleID,
-                    s.TourVoucherID,
-                    s.ScheduleTitle,
-                    s.ScheduleDescription,
-                    s.PackageID,
-                    s.DayNumber,
-                    s.TentativeTime,
-                    s.ActualTime,
-                    s.TentativeCost,
-                    s.ActualCost,
-                    s.DayCostCategoryID, 
-                    s.CreatedAt,
-                    s.UpdatedAt,
-                    PackageTitle = s.Package != null ? s.Package.PackageTitle : null
-                })
-                .ToListAsync();
-
-            if (schedules == null || !schedules.Any())
-            {
-                return NotFound(new { success = false, message = "No schedules found for the package." });
-            }
-
-            return Ok(new { success = true, packageTitle = schedules.FirstOrDefault()?.PackageTitle, data = schedules });
-        }
-
-
-        [HttpGet("get-schedule/{packageID}/{scheduleID}")]
-        public async Task<IActionResult> GetScheduleById(int packageID, int scheduleID)
-        {
-            
-            // Get the specific schedule details
-            var schedule = await _context.Schedule
-                .Where(s => s.PackageID == packageID && s.ScheduleID == scheduleID)
-                .Select(s => new
-                {
-                    s.ScheduleID,
-                    s.TourVoucherID,
-                    s.ScheduleTitle,
-                    s.ScheduleDescription,
-                    s.PackageID,
-                    s.DayNumber,
-                    s.TentativeTime,
-                    s.ActualTime,
-                    s.TentativeCost,
-                    s.ActualCost,
-                    s.DayCostCategoryID, 
-                    
-                    s.CreatedAt,
-                    s.UpdatedAt,
-                    PackageTitle = s.Package != null ? s.Package.PackageTitle : null 
-                })
-                .FirstOrDefaultAsync();
-
-            if (schedule == null)
-            {
-                return NotFound(new { success = false, message = "Schedule not found." });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                data = schedule
-                
-            });
-        }
-
-
-
-        [HttpPut("update-schedule/{scheduleID}")]
-        public async Task<IActionResult> UpdateSchedule(int scheduleID, [FromBody] ScheduleInsertModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var schedule = await _context.Schedule.FindAsync(scheduleID);
-            if (schedule == null)
-            {
-                return NotFound(new { message = "Schedule not found." });
-            }
-
-            schedule.TourVoucherID = model.TourVoucherID;
-            schedule.ScheduleTitle = model.ScheduleTitle;
-            schedule.ScheduleDescription = model.ScheduleDescription;
-            schedule.PackageID = model.PackageID;
-            schedule.DayNumber = model.DayNumber;
-            schedule.TentativeTime = model.TentativeTime;
-            schedule.ActualTime = model.ActualTime;
-            schedule.TentativeCost = model.TentativeCost;
-            schedule.ActualCost = model.ActualCost;
-
-            // Set the DayCostCategoryID from the model
-            schedule.DayCostCategoryID = model.DayCostCategoryID;
-
-            schedule.UpdatedAt = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                success = true,
-                message = "Schedule updated successfully."
-            });
-        }
-
-
-        [HttpDelete("delete-schedule/{scheduleID}")]
-        public async Task<IActionResult> DeleteSchedule(int scheduleID)
-        {
-            var schedule = await _context.Schedule.FindAsync(scheduleID);
-            if (schedule == null)
-            {
-                return NotFound(new { message = "Schedule not found." });
-            }
-
-            schedule.DeletedAt = DateTime.Now;
-            _context.Schedule.Update(schedule);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                success = true,
-                message = "Schedule deleted successfully."
-            });
-        }
-
+        #region team2
 
         [HttpPost("add-package-facility")]
         public async Task<IActionResult> AddPackageFacility([FromBody] PackageFacilityInsertModel model)
@@ -763,7 +466,7 @@ namespace TravelUpdate.Controllers
                 success = true,
                 message = "Package facilities added successfully.",
                 packageID = model.PackageID,
-                facilityIDs = model.FacilityIDs 
+                facilityIDs = model.FacilityIDs
             });
         }
 
@@ -1099,6 +802,456 @@ namespace TravelUpdate.Controllers
             });
         }
 
+        #endregion
+
+        #region team2
+
+        [HttpPost("add-package-accommodation")]
+        public async Task<IActionResult> AddPackageAccommodation([FromBody] PackageAccommodationInsertModel model)
+        {
+            var packageAccommodation = new PackageAccommodation
+            {
+                PackageID = model.PackageID,
+                CheckInDate = model.CheckInDate,
+                CheckOutDate = model.CheckOutDate,
+                RoomID = model.RoomID,
+                price = model.price
+            };
+
+            _context.PackageAccommodations.Add(packageAccommodation);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Package accommodation added successfully.",
+                packageAccommodationID = packageAccommodation.PackageAccommodationID
+            });
+        }
+
+
+
+        [HttpGet("get-package-accommodations/{packageId}")]
+        public async Task<IActionResult> GetPackageAccommodations(int packageId)
+        {
+            var accommodations = await _context.PackageAccommodations
+                .Where(a => a.PackageID == packageId)
+                .ToListAsync();
+
+            if (accommodations == null || !accommodations.Any())
+            {
+                return NotFound(new { success = false, message = "No accommodations found for this package." });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                accommodations
+            });
+        }
+        #endregion
+
+        #region Team2
+
+        private async Task<string> SaveImage(IFormFile imageFile)
+        {
+            var fileExtension = Path.GetExtension(imageFile.FileName);
+
+            var uniqueFileName = $"{Path.GetFileNameWithoutExtension(imageFile.FileName)}_{Guid.NewGuid()}{fileExtension}";
+
+
+            var uploadsFolder = Path.Combine(_hostEnvironment.WebRootPath, "Uploads", "Packages");
+
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(fileStream);
+            }
+            return Path.Combine("Uploads", "Packages", uniqueFileName);
+        }
+
+        private async Task<string> SaveVoucher(IFormFile imageFile)
+        {
+            var fileExtension = Path.GetExtension(imageFile.FileName);
+
+            var uniqueFileName = $"{Path.GetFileNameWithoutExtension(imageFile.FileName)}_{Guid.NewGuid()}{fileExtension}";
+
+            var uploadsFolder = Path.Combine(_hostEnvironment.WebRootPath, "Uploads", "Vouchers");
+
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(fileStream);
+            }
+
+            return Path.Combine("Uploads", "Vouchers", uniqueFileName);
+        }
+
+
+        #endregion
+
+        #region Voucher
+
+        [HttpPost("add-tour-voucher")]
+        public async Task<IActionResult> AddTourVoucher([FromForm] TourVoucherInsertModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            string? voucherUrl = null;
+
+            if (model.VoucherFile != null)
+            {
+                voucherUrl = await SaveVoucher(model.VoucherFile);
+            }
+
+            var tourVoucher = new TourVoucher
+            {
+                TourVoucherCode = model.TourVoucherCode,
+                VoucherUrl = voucherUrl
+            };
+
+            _context.TourVouchers.Add(tourVoucher);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Tour voucher added successfully.",
+                tourVoucherID = tourVoucher.TourVoucherID,
+                voucherUrl = voucherUrl
+            });
+        }
+
+        [HttpGet("get-tour-vouchers")]
+        public async Task<IActionResult> GetTourVouchers()
+        {
+            var tourVouchers = await _context.TourVouchers
+                .Select(tv => new
+                {
+                    tv.TourVoucherID,
+                    tv.TourVoucherCode,
+                    tv.VoucherUrl
+                })
+                .ToListAsync();
+
+            if (!tourVouchers.Any())
+            {
+                return NotFound(new { success = false, message = "No tour vouchers found." });
+            }
+
+            return Ok(tourVouchers);
+        }
+
+        [HttpGet("get-tour-voucher/{id}")]
+        public async Task<IActionResult> GetTourVoucherById(int id)
+        {
+            var tourVoucher = await _context.TourVouchers
+                .Where(tv => tv.TourVoucherID == id)
+                .Select(tv => new
+                {
+                    tv.TourVoucherID,
+                    tv.TourVoucherCode,
+                    tv.VoucherUrl
+                })
+                .FirstOrDefaultAsync();
+
+            if (tourVoucher == null)
+            {
+                return NotFound(new { success = false, message = "Tour voucher not found." });
+            }
+
+            return Ok(tourVoucher);
+        }
+
+        [HttpPut("update-tour-voucher/{id}")]
+        public async Task<IActionResult> UpdateTourVoucher(int id, [FromForm] TourVoucherInsertModel model)
+        {
+            var tourVoucher = await _context.TourVouchers.FindAsync(id);
+            if (tourVoucher == null)
+            {
+                return NotFound(new { success = false, message = "Tour voucher not found." });
+            }
+
+            tourVoucher.TourVoucherCode = model.TourVoucherCode;
+
+            if (model.VoucherFile != null)
+            {
+                if (!string.IsNullOrEmpty(tourVoucher.VoucherUrl))
+                {
+                    var oldFilePath = Path.Combine(_hostEnvironment.WebRootPath, tourVoucher.VoucherUrl);
+                    if (System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
+                }
+
+                tourVoucher.VoucherUrl = await SaveVoucher(model.VoucherFile);
+            }
+
+            _context.TourVouchers.Update(tourVoucher);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Tour voucher updated successfully.", tourVoucherID = tourVoucher.TourVoucherID });
+        }
+
+        [HttpDelete("delete-tour-voucher/{id}")]
+        public async Task<IActionResult> DeleteTourVoucher(int id)
+        {
+            var tourVoucher = await _context.TourVouchers.FindAsync(id);
+            if (tourVoucher == null)
+            {
+                return NotFound(new { success = false, message = "Tour voucher not found." });
+            }
+
+            if (!string.IsNullOrEmpty(tourVoucher.VoucherUrl))
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Vouchers");
+                var filePath = Path.Combine(uploadsFolder, Path.GetFileName(tourVoucher.VoucherUrl));
+
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+            }
+
+            _context.TourVouchers.Remove(tourVoucher);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Tour voucher deleted successfully." });
+        }
+
+        #endregion
+
+        #region Schedule
+
+        [HttpPost("add-schedule")]
+        public async Task<IActionResult> AddSchedule([FromBody] ScheduleInsertModel model, string? customUrl = null)
+        {
+
+            var schedule = new Schedule
+            {
+                // ScheduleID should not be set
+                TourVoucherID = model.TourVoucherID,
+                ScheduleTitle = model.ScheduleTitle,
+                ScheduleDescription = model.ScheduleDescription,
+                PackageID = model.PackageID,
+                DayNumber = model.DayNumber,
+                TentativeTime = model.TentativeTime,
+                ActualTime = model.ActualTime,
+                TentativeCost = model.TentativeCost,
+                ActualCost = model.ActualCost,
+                //Category = model.Category
+
+            };
+
+
+
+            await _context.Schedule.AddAsync(schedule); 
+            await _context.SaveChangesAsync(); 
+
+            var url = customUrl ?? "getpackage"; 
+            return Ok(new
+            {
+                success = true,
+                message = "Schedule added successfully.",
+                scheduleID = schedule.ScheduleID, 
+                packageID = schedule.PackageID,
+                url
+            });
+        }
+
+        [HttpGet("get-schedules/{packageID}")]
+        public async Task<IActionResult> GetSchedulesByPackageID(int packageID)
+           {
+            var schedules = await _context.Schedule
+                .Where(s => s.PackageID == packageID)
+                .Select(s => new
+                {
+                    s.ScheduleID,
+                    s.TourVoucherID,
+                    s.ScheduleTitle,
+                    s.ScheduleDescription,
+                    s.PackageID,
+                    s.DayNumber,
+                    s.TentativeTime,
+                    s.ActualTime,
+                    s.TentativeCost,
+                    s.ActualCost,
+                    s.DayCostCategoryID, 
+                    s.CreatedAt,
+                    s.UpdatedAt,
+                    PackageTitle = s.Package != null ? s.Package.PackageTitle : null
+                })
+                .ToListAsync();
+
+            if (schedules == null || !schedules.Any())
+            {
+                return NotFound(new { success = false, message = "No schedules found for the package." });
+            }
+
+            return Ok(new { success = true, packageTitle = schedules.FirstOrDefault()?.PackageTitle, data = schedules });
+        }
+
+
+        [HttpGet("get-schedule/{packageID}/{scheduleID}")]
+        public async Task<IActionResult> GetScheduleById(int packageID, int scheduleID)
+        {
+            
+            // Get the specific schedule details
+            var schedule = await _context.Schedule
+                .Where(s => s.PackageID == packageID && s.ScheduleID == scheduleID)
+                .Select(s => new
+                {
+                    s.ScheduleID,
+                    s.TourVoucherID,
+                    s.ScheduleTitle,
+                    s.ScheduleDescription,
+                    s.PackageID,
+                    s.DayNumber,
+                    s.TentativeTime,
+                    s.ActualTime,
+                    s.TentativeCost,
+                    s.ActualCost,
+                    s.DayCostCategoryID, 
+                    
+                    s.CreatedAt,
+                    s.UpdatedAt,
+                    PackageTitle = s.Package != null ? s.Package.PackageTitle : null 
+                })
+                .FirstOrDefaultAsync();
+
+            if (schedule == null)
+            {
+                return NotFound(new { success = false, message = "Schedule not found." });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                data = schedule
+                
+            });
+        }
+
+
+
+        [HttpPut("update-schedule/{scheduleID}")]
+        public async Task<IActionResult> UpdateSchedule(int scheduleID, [FromBody] ScheduleInsertModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var schedule = await _context.Schedule.FindAsync(scheduleID);
+            if (schedule == null)
+            {
+                return NotFound(new { message = "Schedule not found." });
+            }
+
+            schedule.TourVoucherID = model.TourVoucherID;
+            schedule.ScheduleTitle = model.ScheduleTitle;
+            schedule.ScheduleDescription = model.ScheduleDescription;
+            schedule.PackageID = model.PackageID;
+            schedule.DayNumber = model.DayNumber;
+            schedule.TentativeTime = model.TentativeTime;
+            schedule.ActualTime = model.ActualTime;
+            schedule.TentativeCost = model.TentativeCost;
+            schedule.ActualCost = model.ActualCost;
+
+            // Set the DayCostCategoryID from the model
+            schedule.DayCostCategoryID = model.DayCostCategoryID;
+
+            schedule.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Schedule updated successfully."
+            });
+        }
+
+        //[HttpGet("schedulesCost/{packageID}")]
+        //public async Task<IActionResult> GetSchedulesCostPackageID(ScheduleCostInputModel scheduleCostInputModel)
+        //{
+        //    if (scheduleCostInputModel.DayCostCatagory == 1)
+        //    {
+        //        var cost = await _context.PackageFoodItems.Where(e=> e.PackageID == scheduleCostInputModel.PackageId && e.PackageDayNumber == scheduleCostInputModel.DayNumber).FirstOrDefaultAsync();
+
+        //        return Ok(new 
+        //        {
+        //            tentiveTime = cost.ScheduleTime,
+        //            tentiveCost = cost.ItemTotalCost, 
+        //        });
+
+        //    }
+        //    if (scheduleCostInputModel.DayCostCatagory == 2)
+        //    {
+        //        var cost = await _context.PackageAccommodations.Where(e => e.PackageID == scheduleCostInputModel.PackageId ).FirstOrDefaultAsync();
+
+        //        return Ok(new
+        //        {
+        //            tentiveTime = cost.CheckInDate,
+                   
+        //        });
+
+        //    }
+        //    if (scheduleCostInputModel.DayCostCatagory == 3)
+        //    {
+        //        var cost = await _context.PackageTransportations.Where(e => e.PackageID == scheduleCostInputModel.PackageId ).FirstOrDefaultAsync();
+
+        //        return Ok(new
+        //        {
+        //            tentiveTime = cost.ScheduleTime,
+        //            tentiveCost = cost.ItemTotalCost,
+        //        });
+
+        //    }
+        //}
+
+        [HttpDelete("delete-schedule/{scheduleID}")]
+        public async Task<IActionResult> DeleteSchedule(int scheduleID)
+        {
+            var schedule = await _context.Schedule.FindAsync(scheduleID);
+            if (schedule == null)
+            {
+                return NotFound(new { message = "Schedule not found." });
+            }
+
+            schedule.DeletedAt = DateTime.Now;
+            _context.Schedule.Update(schedule);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Schedule deleted successfully."
+            });
+        }
+
+
+
+        #endregion
+      
+        #region PackFood
+
         [HttpPost("add-package-food-item")]
         public async Task<IActionResult> AddPackageFoodItem([FromBody] PackageFoodItemInsertModel model)
         {
@@ -1152,8 +1305,9 @@ namespace TravelUpdate.Controllers
             });
         }
 
-        
+        #endregion
 
+        #region PackTarnsPort
 
         [HttpPost("add-package-transportation")]
         public async Task<IActionResult> AddPackageTransportation([FromBody] PackageTransportationInsertModel model)
@@ -1203,49 +1357,9 @@ namespace TravelUpdate.Controllers
             });
         }
 
-        [HttpPost("add-package-accommodation")]
-        public async Task<IActionResult> AddPackageAccommodation([FromBody] PackageAccommodationInsertModel model)
-        {
-            var packageAccommodation = new PackageAccommodation
-            {
-                PackageID = model.PackageID,
-                CheckInDate = model.CheckInDate,
-                CheckOutDate = model.CheckOutDate,
-                RoomID = model.RoomID,
-                price = model.price
-            };
+        #endregion
 
-            _context.PackageAccommodations.Add(packageAccommodation);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                success = true,
-                message = "Package accommodation added successfully.",
-                packageAccommodationID = packageAccommodation.PackageAccommodationID
-            });
-        }
-
-
-
-        [HttpGet("get-package-accommodations/{packageId}")]
-        public async Task<IActionResult> GetPackageAccommodations(int packageId)
-        {
-            var accommodations = await _context.PackageAccommodations
-                .Where(a => a.PackageID == packageId)
-                .ToListAsync();
-
-            if (accommodations == null || !accommodations.Any())
-            {
-                return NotFound(new { success = false, message = "No accommodations found for this package." });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                accommodations
-            });
-        }
+        #region Budget
 
         [HttpPost("add-package-budget")]
         public async Task<IActionResult> AddPackageBudget([FromBody] PackageBudgetInsertModel model)
@@ -1382,6 +1496,10 @@ namespace TravelUpdate.Controllers
                 IndividualPackageCost = individualPackageCost
             });
         }
+
+
+
+
         [HttpGet]
         public async Task<IActionResult> CalculateAndInsertCosts(int packageId)
         {
@@ -1437,54 +1555,7 @@ namespace TravelUpdate.Controllers
             return Ok(new { success = true, packageID, dayCostCategoryID, totalCost });
         }
 
-        private async Task<string> SaveImage(IFormFile imageFile)
-        {
-            var fileExtension = Path.GetExtension(imageFile.FileName);
-
-            var uniqueFileName = $"{Path.GetFileNameWithoutExtension(imageFile.FileName)}_{Guid.NewGuid()}{fileExtension}";
-
-
-            var uploadsFolder = Path.Combine(_hostEnvironment.WebRootPath, "Uploads", "Packages");
-
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await imageFile.CopyToAsync(fileStream);
-            }
-            return Path.Combine("Uploads", "Packages", uniqueFileName); 
-        }
-
-        private async Task<string> SaveVoucher(IFormFile imageFile)
-        {
-            var fileExtension = Path.GetExtension(imageFile.FileName);
-
-            var uniqueFileName = $"{Path.GetFileNameWithoutExtension(imageFile.FileName)}_{Guid.NewGuid()}{fileExtension}";
-
-            var uploadsFolder = Path.Combine(_hostEnvironment.WebRootPath, "Uploads", "Vouchers");
-
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await imageFile.CopyToAsync(fileStream);
-            }
-
-            return Path.Combine("Uploads", "Vouchers", uniqueFileName);
-        }
-
-
-
+        #endregion
 
     }
 }

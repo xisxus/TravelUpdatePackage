@@ -1,6 +1,7 @@
 // Program.cs
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using System.Text.Json.Serialization;
 using TravelUpdate.Dal;
 using TravelUpdate.Models;
@@ -50,16 +51,30 @@ namespace TravelUpdate
                 options.User.RequireUniqueEmail = true;
             });
 
-            // Add CORS services
+            //// Add CORS services
+            //builder.Services.AddCors(options =>
+            //{
+            //    options.AddPolicy("AllowSpecificOrigin", builder =>
+            //    {
+            //        builder.WithOrigins("http://localhost:4200") // Angular app URL
+            //               .AllowAnyMethod()
+            //               .AllowAnyHeader();
+            //    });
+            //});
+
+            // Add CORS services with any origin allowed
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowSpecificOrigin", builder =>
+                options.AddPolicy("AllowAll", builder =>
                 {
-                    builder.WithOrigins("http://localhost:4200") // Angular app URL
-                           .AllowAnyMethod()
-                           .AllowAnyHeader();
+                    builder.AllowAnyOrigin()    // Allow requests from any origin
+                           .AllowAnyMethod()    // Allow any HTTP method (GET, POST, etc.)
+                           .AllowAnyHeader();   // Allow any headers
                 });
             });
+
+
+
 
             // Add authentication and authorization middleware
             builder.Services.AddAuthentication();
@@ -68,7 +83,9 @@ namespace TravelUpdate
             var app = builder.Build();
 
             // Use CORS middleware
-            app.UseCors("AllowSpecificOrigin");
+           // app.UseCors("AllowSpecificOrigin");
+
+            app.UseCors("AllowAll");
 
             if (app.Environment.IsDevelopment())
             {
@@ -77,7 +94,10 @@ namespace TravelUpdate
             }
             app.UseStaticFiles();
 
-            
+
+         
+
+
             app.UseAuthentication(); 
             app.UseAuthorization();   
 

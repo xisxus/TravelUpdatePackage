@@ -5,10 +5,10 @@ namespace TravelUpdate.Models.InputModels
     public class ScheduleInsertModel
     {
         public int TourVoucherID { get; set; }
-        public string ScheduleTitle { get; set; } = "JourneyStart/LunchBreak/MeetingTiming";
+        public string ScheduleTitle { get; set; } // "JourneyStart/LunchBreak/MeetingTiming";
         public string? ScheduleDescription { get; set; }
-        public int PackageID { get; set; } = 1;
-        public int DayNumber { get; set; } = 1;
+        public int PackageID { get; set; } 
+        public int DayNumber { get; set; } 
         public DateTime TentativeTime { get; set; }
         public DateTime? ActualTime { get; set; }
 
