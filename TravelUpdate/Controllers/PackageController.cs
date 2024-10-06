@@ -1039,8 +1039,8 @@ namespace TravelUpdate.Controllers
 
         #region Schedule
 
-        [HttpPost("add-schedule")]
-        public async Task<IActionResult> AddSchedule([FromBody] ScheduleInsertModel model, string? customUrl = null)
+        [HttpPost("add-schedule/{packageID}")]
+        public async Task<IActionResult> AddSchedule(int packageID, ScheduleInsertModel model, string? customUrl = null)
         {
 
             var schedule = new Schedule
@@ -1049,12 +1049,13 @@ namespace TravelUpdate.Controllers
                 TourVoucherID = model.TourVoucherID,
                 ScheduleTitle = model.ScheduleTitle,
                 ScheduleDescription = model.ScheduleDescription,
-                PackageID = model.PackageID,
+                PackageID = packageID,
                 DayNumber = model.DayNumber,
                 TentativeTime = model.TentativeTime,
                 ActualTime = model.ActualTime,
                 TentativeCost = model.TentativeCost,
                 ActualCost = model.ActualCost,
+                DayCostCategoryID = model.DayCostCategoryID
                 //Category = model.Category
 
             };
@@ -1167,7 +1168,7 @@ namespace TravelUpdate.Controllers
             schedule.TourVoucherID = model.TourVoucherID;
             schedule.ScheduleTitle = model.ScheduleTitle;
             schedule.ScheduleDescription = model.ScheduleDescription;
-            schedule.PackageID = model.PackageID;
+           
             schedule.DayNumber = model.DayNumber;
             schedule.TentativeTime = model.TentativeTime;
             schedule.ActualTime = model.ActualTime;
@@ -1252,8 +1253,8 @@ namespace TravelUpdate.Controllers
       
         #region PackFood
 
-        [HttpPost("add-package-food-item")]
-        public async Task<IActionResult> AddPackageFoodItem([FromBody] PackageFoodItemInsertModel model)
+        [HttpPost("add-package-food-item/{packageID}")]
+        public async Task<IActionResult> AddPackageFoodItem( int packageID, PackageFoodItemInsertModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -1266,7 +1267,7 @@ namespace TravelUpdate.Controllers
             {
                 MealTypeID = model.MealTypeID,
                 FoodItemID = model.FoodItemID,
-                PackageID = model.PackageID,
+                PackageID = packageID,
                 PackageDayNumber = model.PackageDayNumber,
                 FoodQuantity = model.FoodQuantity,
                 FoodUnitPrice = model.FoodUnitPrice,
@@ -1282,7 +1283,7 @@ namespace TravelUpdate.Controllers
                 success = true,
                 message = "Package food item added successfully.",
                 packageFoodItemId = packageFoodItem.PackageFoodItemID,
-                packageId = model.PackageID
+                packageId = packageID
             });
         }
 

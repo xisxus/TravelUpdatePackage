@@ -6,7 +6,7 @@ namespace TravelUpdate.Models.InputModels
     {
         public int MealTypeID { get; set; } = 1;
         public int FoodItemID { get; set; }
-        public int PackageID { get; set; }
+        //public int PackageID { get; set; }
         public int PackageDayNumber { get; set; } = 1; 
         [Column(TypeName = "decimal(18,2)")]
         public decimal FoodQuantity { get; set; }

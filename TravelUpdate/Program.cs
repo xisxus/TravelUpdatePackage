@@ -92,6 +92,7 @@ namespace TravelUpdate
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
             app.UseStaticFiles();
 
 
