@@ -1039,8 +1039,8 @@ namespace TravelUpdate.Controllers
 
         #region Schedule
 
-        [HttpPost("add-schedule/{packageID}")]
-        public async Task<IActionResult> AddSchedule(int packageID, ScheduleInsertModel model, string? customUrl = null)
+        [HttpPost("schedule/add/{packageID}")]
+        public async Task<IActionResult> AddSchedule(int packageID, ScheduleInsertModel model)
         {
 
             var schedule = new Schedule
@@ -1063,20 +1063,46 @@ namespace TravelUpdate.Controllers
 
 
             await _context.Schedule.AddAsync(schedule); 
-            await _context.SaveChangesAsync(); 
+            await _context.SaveChangesAsync();
 
-            var url = customUrl ?? "getpackage"; 
+
+
+
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url + "/" + packageID;
+            }
+
+
+
+
+
             return Ok(new
             {
                 success = true,
                 message = "Schedule added successfully.",
                 scheduleID = schedule.ScheduleID, 
                 packageID = schedule.PackageID,
-                url
+                requestUrl
             });
         }
 
-        [HttpGet("get-schedules/{packageID}")]
+        [HttpGet("schedule/get/{packageID}")]
         public async Task<IActionResult> GetSchedulesByPackageID(int packageID)
            {
             var schedules = await _context.Schedule
@@ -1105,7 +1131,26 @@ namespace TravelUpdate.Controllers
                 return NotFound(new { success = false, message = "No schedules found for the package." });
             }
 
-            return Ok(new { success = true, packageTitle = schedules.FirstOrDefault()?.PackageTitle, data = schedules });
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url + "/" + packageID;
+            }
+
+            return Ok(new { success = true, packageTitle = schedules.FirstOrDefault()?.PackageTitle, data = schedules , url = requestUrl});
         }
 
 
@@ -1141,17 +1186,38 @@ namespace TravelUpdate.Controllers
                 return NotFound(new { success = false, message = "Schedule not found." });
             }
 
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url + "/" + packageID + "/" + scheduleID;
+            }
+
             return Ok(new
             {
                 success = true,
-                data = schedule
+                data = schedule,
+                url = requestUrl
                 
             });
         }
 
 
 
-        [HttpPut("update-schedule/{scheduleID}")]
+        [HttpPut("schedule/edit/{scheduleID}")]
         public async Task<IActionResult> UpdateSchedule(int scheduleID, [FromBody] ScheduleInsertModel model)
         {
             if (!ModelState.IsValid)
@@ -1227,7 +1293,7 @@ namespace TravelUpdate.Controllers
         //    }
         //}
 
-        [HttpDelete("delete-schedule/{scheduleID}")]
+        [HttpDelete("schedule/delete/{scheduleID}")]
         public async Task<IActionResult> DeleteSchedule(int scheduleID)
         {
             var schedule = await _context.Schedule.FindAsync(scheduleID);
@@ -1336,14 +1402,14 @@ namespace TravelUpdate.Controllers
 
         #region PackTarnsPort
 
-        [HttpPost("add-package-transportation")]
-        public async Task<IActionResult> AddPackageTransportation([FromBody] PackageTransportationInsertModel model)
+        [HttpPost("transport/add/{packageId}")]
+        public async Task<IActionResult> AddPackageTransportation(int packageId, PackageTransportationInsertModel model)
         {
             var itemTransportCost = model.SeatBooked * model.PerHeadTransportCost;
 
             var packageTransportation = new PackageTransportation
             {
-                PackageID = model.PackageID,
+                PackageID = packageId,
                 TransportationTypeID = model.TransportationTypeID,
                 TransportationCatagoryID = model.TransportationCatagoryID,
                 TransportationID = model.TransportationID,
@@ -1357,15 +1423,41 @@ namespace TravelUpdate.Controllers
             await _context.SaveChangesAsync();
 
 
+
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url + "/" + packageId;
+            }
+
             return Ok(new
             {
                 success = true,
                 message = "Package transportation added successfully.",
-                packageTransportationID = packageTransportation.PackageTransportationID
+                packageTransportationID = packageTransportation.PackageTransportationID,
+                url = requestUrl
             });
         }
 
-        [HttpGet("get-package-transportation/{packageId}")]
+        
+
+        [HttpGet("transport/get/{packageId}")]
         public async Task<IActionResult> GetPackageTransportation(int packageId)
         {
             var transportationItems = await _context.PackageTransportations
@@ -1377,10 +1469,35 @@ namespace TravelUpdate.Controllers
                 return NotFound(new { success = false, message = "No transportation items found for this package." });
             }
 
+
+
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url + "/" + packageId;
+            }
+
             return Ok(new
             {
                 success = true,
-                transportationItems
+                transportationItems,
+                url = requestUrl
             });
         }
 
@@ -1584,6 +1701,8 @@ namespace TravelUpdate.Controllers
 
         #endregion
 
+
+       
 
         public static string RemoveLastSegment(string url)
         {

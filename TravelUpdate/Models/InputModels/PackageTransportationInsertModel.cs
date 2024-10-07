@@ -5,7 +5,7 @@ namespace TravelUpdate.Models.InputModels
 {
     public class PackageTransportationInsertModel
     {
-        public int PackageID { get; set; }
+        //public int PackageID { get; set; }
 
         public int TransportationTypeID { get; set; }
 
