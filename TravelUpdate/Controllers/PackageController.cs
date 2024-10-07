@@ -1278,12 +1278,38 @@ namespace TravelUpdate.Controllers
             _context.PackageFoodItems.Add(packageFoodItem);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(AddPackageFoodItem), new { packageFoodItemId = packageFoodItem.PackageFoodItemID }, new
+
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService != null)
+            {
+                 requestUrl = urlService?.RequestUrl?.Url ?? "home";
+            }
+            else
+            {
+                 requestUrl = urlService?.RequestUrl?.Url + "/" + packageID;
+            }
+
+
+            return CreatedAtAction(nameof(AddPackageFoodItem), new 
+            { packageFoodItemId = packageFoodItem.PackageFoodItemID
+                
+            }, new
             {
                 success = true,
                 message = "Package food item added successfully.",
                 packageFoodItemId = packageFoodItem.PackageFoodItemID,
-                packageId = packageID
+                packageId = packageID,
+                Url = requestUrl
             });
         }
 
@@ -1558,5 +1584,27 @@ namespace TravelUpdate.Controllers
 
         #endregion
 
+
+        public static string RemoveLastSegment(string url)
+        {
+            // Ensure the URL is not empty or null
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            // Split the URL into segments
+            var segments = url.Split('/');
+
+            // Remove the last segment
+            if (segments.Length > 1)
+            {
+                // Create a new URL without the last segment
+                return string.Join("/", segments, 0, segments.Length - 1) + "/";
+            }
+
+            // Return the original URL if there's no segment to remove
+            return url;
+        }
     }
 }

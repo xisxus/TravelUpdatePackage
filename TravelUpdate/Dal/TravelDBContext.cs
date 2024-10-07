@@ -62,6 +62,8 @@ namespace TravelUpdate.Dal
         public virtual DbSet<Transportation> Transportation { get; set; }
         public virtual DbSet<TransportationCatagory> TransportationCatagories { get; set; }
         public virtual DbSet<Seats> Seats { get; set; }
+        public virtual DbSet<RequestUrl> RequestUrls { get; set; }
+        public virtual DbSet<UrlService> UrlServices { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
