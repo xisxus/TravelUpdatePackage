@@ -1292,11 +1292,11 @@ namespace TravelUpdate.Controllers
 
             if (urlService == null)
             {
-                 requestUrl =  "home";
+                 requestUrl =  "dashboard";
             }
             else
             {
-                 requestUrl = urlService?.RequestUrl?.Url + "/" + packageID;
+                requestUrl = urlService?.RequestUrl?.Url + "/" + packageID;
             }
 
 
@@ -1310,7 +1310,7 @@ namespace TravelUpdate.Controllers
                 packageFoodItemId = packageFoodItem.PackageFoodItemID,
                 packageId = packageID,
                 Url = requestUrl
-            });
+        });
         }
 
         [HttpGet("get-package-food-items/{packageId}")]
@@ -1587,28 +1587,28 @@ namespace TravelUpdate.Controllers
 
         public static string RemoveLastSegment(string url)
         {
-            
             if (string.IsNullOrEmpty(url))
             {
                 return url;
             }
 
-           
             url = url.TrimStart('/');
 
-           
             var segments = url.Split('/');
 
-           
             if (segments.Length > 1)
             {
-               
-                return string.Join("/", segments, 1, segments.Length - 2);
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
             }
 
-           
             return url;
         }
+
 
 
     }

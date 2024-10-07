@@ -31,7 +31,7 @@ namespace TravelUpdate.Controllers
         }
 
         // POST: api/RoomTypeOutput
-        [HttpPost]
+        [HttpPost("add")]
         public async Task<ActionResult<RoomType>> PostRoomType(RoomTypeInsertModel model)
         {
             if (!ModelState.IsValid)
@@ -47,8 +47,30 @@ namespace TravelUpdate.Controllers
             _context.RoomTypes.Add(roomType);
             await _context.SaveChangesAsync();
 
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url;
+            }
+
+
+
             // Include a custom URL in the success message
-            return CreatedAtAction(nameof(GetRoomType), new { id = roomType.RoomTypeID }, roomType);
+            return CreatedAtAction(nameof(GetRoomType), new { id = roomType.RoomTypeID  },  new { url = requestUrl });
         }
 
         // GET: api/RoomType/{id}
@@ -132,5 +154,31 @@ namespace TravelUpdate.Controllers
         {
             return _context.RoomTypes.Any(e => e.RoomTypeID == id);
         }
+
+
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
+        }
+
     }
 }

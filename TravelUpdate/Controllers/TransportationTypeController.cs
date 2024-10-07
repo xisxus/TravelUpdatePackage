@@ -79,7 +79,7 @@ namespace TravelUpdate.Controllers
             await _context.TransportationTypes.AddAsync(newType);
             await _context.SaveChangesAsync();
 
-            var url = customUrl ?? "get-all"; // Custom URL or default
+            var url = customUrl ?? "/transportation-types"; // Custom URL or default
 
             return Ok(new
             {
