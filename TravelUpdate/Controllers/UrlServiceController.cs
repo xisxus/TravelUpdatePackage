@@ -88,36 +88,36 @@ namespace TravelUpdate.Controllers
             _context.UrlServices.Add(newUrlService);
             await _context.SaveChangesAsync();
 
-            // Fetching the path from the HttpContext
-            var request = HttpContext.Request;
-            var path = request.Path.ToString();
+            //// Fetching the path from the HttpContext
+            //var request = HttpContext.Request;
+            //var path = request.Path.ToString();
 
-            // Finding the UrlService based on the CurrentUrl
-            var urlService = await _context.UrlServices
-                .Include(u => u.RequestUrl)
-                .FirstOrDefaultAsync(e => e.CurrentUrl == path);
+            //// Finding the UrlService based on the CurrentUrl
+            //var urlService = await _context.UrlServices
+            //    .Include(u => u.RequestUrl)
+            //    .FirstOrDefaultAsync(e => e.CurrentUrl == path);
 
-            if (urlService == null)
-            {
-                // Return NotFound if no matching UrlService is found
-                return NotFound("No UrlService found for the current URL.");
-            }
+            //if (urlService == null)
+            //{
+            //    // Return NotFound if no matching UrlService is found
+            //    return NotFound("No UrlService found for the current URL.");
+            //}
 
-            var urlServiceDto = new UrlServiceDto
-            {
-                UrlServiceId = urlService.UrlServiceId,
-                CurrentUrl = urlService.CurrentUrl,
-                Description = urlService.Description,
-                RequestUrl = new RequestUrlDto
-                {
-                    RequestUrlId = urlService.RequestUrl.RequestUrlId,
-                    Url = urlService.RequestUrl.Url ?? "home", // Fallback to "home" if Url is null
-                    UrlName = urlService.RequestUrl.UrlName
-                }
-            };
+            //var urlServiceDto = new UrlServiceDto
+            //{
+            //    UrlServiceId = urlService.UrlServiceId,
+            //    CurrentUrl = urlService.CurrentUrl,
+            //    Description = urlService.Description,
+            //    RequestUrl = new RequestUrlDto
+            //    {
+            //        RequestUrlId = urlService.RequestUrl.RequestUrlId,
+            //        Url = urlService.RequestUrl.Url ?? "home", // Fallback to "home" if Url is null
+            //        UrlName = urlService.RequestUrl.UrlName
+            //    }
+            //};
 
             // Return Created response with the DTO
-            return CreatedAtAction(nameof(GetUrlService), new { id = urlServiceDto.UrlServiceId }, urlServiceDto);
+            return CreatedAtAction(nameof(GetUrlService), new { id = newUrlService.UrlServiceId } );
         }
 
         // PUT: api/UrlService/urlservices/{id}

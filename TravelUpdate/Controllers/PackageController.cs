@@ -1290,9 +1290,9 @@ namespace TravelUpdate.Controllers
 
             var requestUrl = "";
 
-            if (urlService != null)
+            if (urlService == null)
             {
-                 requestUrl = urlService?.RequestUrl?.Url ?? "home";
+                 requestUrl =  "home";
             }
             else
             {
@@ -1587,24 +1587,29 @@ namespace TravelUpdate.Controllers
 
         public static string RemoveLastSegment(string url)
         {
-            // Ensure the URL is not empty or null
+            
             if (string.IsNullOrEmpty(url))
             {
                 return url;
             }
 
-            // Split the URL into segments
+           
+            url = url.TrimStart('/');
+
+           
             var segments = url.Split('/');
 
-            // Remove the last segment
+           
             if (segments.Length > 1)
             {
-                // Create a new URL without the last segment
-                return string.Join("/", segments, 0, segments.Length - 1) + "/";
+               
+                return string.Join("/", segments, 1, segments.Length - 2);
             }
 
-            // Return the original URL if there's no segment to remove
+           
             return url;
         }
+
+
     }
 }
