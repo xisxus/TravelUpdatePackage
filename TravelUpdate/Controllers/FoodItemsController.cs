@@ -42,49 +42,83 @@ namespace TravelUpdate.Controllers
 
             return Ok(new { success = true, data = foodItems });
         }
-
-
-        // POST: api/FoodItems
-        [HttpPost("add-fooditem")]
-        public async Task<IActionResult> CreateFoodItem([FromBody] FoodItemInputModel model, [FromQuery] string? customUrl = null)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetFoodItem(int id)
         {
+            var foodItem = await _context.FoodItems
+                .Where(item => item.FoodItemID == id)
+                .Select(item => new FoodItemOutputModel
+                {
+                    FoodItemID = item.FoodItemID,
+                    ItemName = item.ItemName,
+                    CreatedAt = item.CreatedAt,
+                    UpdatedAt = item.UpdatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (foodItem == null)
+            {
+                return NotFound(new { success = false, message = "Food item not found." });
+            }
+
+            return Ok(new { success = true, data = foodItem });
+        }
+
+
+        [HttpPost("add")]
+        public async Task<IActionResult> CreateFoodItem([FromBody] FoodItemInputModel model)
+        {
+            // Validate the model
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+
             var foodItem = new FoodItem
             {
                 ItemName = model.ItemName,
-
                 CreatedAt = model.CreatedAt,
                 UpdatedAt = model.UpdatedAt,
-
             };
+
 
             _context.FoodItems.Add(foodItem);
             await _context.SaveChangesAsync();
 
-            var url = customUrl ?? "getfooditem";
 
-            return CreatedAtAction(nameof(CreateFoodItem), new { foodItemId = foodItem.FoodItemID }, new
-            {
-                success = true,
-                message = "Food item created successfully.",
-                foodItemId = foodItem.FoodItemID,
-                url
-            });
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+
+            var requestUrl = urlService == null ? "dashboard" :
+                urlService?.RequestUrl?.Url;
+
+            var url = Url.Action(nameof(GetFoodItem), new { id = foodItem.FoodItemID });
+
+
+            return Created(url, new { foodItem, requestUrl });
         }
 
 
+
+
         // PUT: api/FoodItems/5
-        [HttpPut("{id}")]
+        [HttpPut("edit/{id}")]
         public async Task<IActionResult> PutFoodItem(int id, FoodItemInputModel foodItemModel)
         {
+
             if (id != foodItemModel.FoodItemID)
             {
                 return BadRequest();
             }
+
 
             var foodItem = await _context.FoodItems.FindAsync(id);
             if (foodItem == null)
@@ -92,12 +126,13 @@ namespace TravelUpdate.Controllers
                 return NotFound();
             }
 
-
             foodItem.ItemName = foodItemModel.ItemName;
             foodItem.CreatedAt = foodItemModel.CreatedAt;
             foodItem.UpdatedAt = foodItemModel.UpdatedAt;
 
+
             _context.Entry(foodItem).State = EntityState.Modified;
+
 
             try
             {
@@ -115,11 +150,27 @@ namespace TravelUpdate.Controllers
                 }
             }
 
-            return NoContent();
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = urlService == null ? "dashboard" :
+                urlService?.RequestUrl?.Url;
+
+
+            var url = Url.Action(nameof(GetAllFoodItems), new { id = foodItem.FoodItemID });
+
+            return Created(url, new { foodItem, requestUrl });
         }
 
+
         // DELETE: api/FoodItems/5
-        [HttpDelete("{id}")]
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteFoodItem(int id)
         {
             var foodItem = await _context.FoodItems.FindAsync(id);
@@ -137,6 +188,31 @@ namespace TravelUpdate.Controllers
         private bool FoodItemExists(int id)
         {
             return _context.FoodItems.Any(e => e.FoodItemID == id);
+        }
+
+
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
         }
     }
 }

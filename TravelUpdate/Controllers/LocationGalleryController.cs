@@ -25,7 +25,7 @@ namespace TravelUpdate.Controllers
         }
 
         // GET: api/LocationGallery/location/{locationId}
-        [HttpGet("location/{locationId}")]
+        [HttpGet("locationGallery/{locationId}")]
         public async Task<ActionResult<IEnumerable<LocationGallery>>> GetGalleriesByLocationId(int locationId)
         {
             var galleries = await _context.LocationGalleries
@@ -41,8 +41,8 @@ namespace TravelUpdate.Controllers
         }
 
         // POST: api/LocationGallery
-        [HttpPost]
-        public async Task<ActionResult<LocationGallery>> PostLocationGallery(LocationGalleryInsertModel model)
+        [HttpPost("add")]
+        public async Task<ActionResult> PostLocationGallery(LocationGalleryInsertModel model)
         {
             if (model.ImageFile == null || model.ImageFile.Length == 0)
             {
@@ -60,12 +60,25 @@ namespace TravelUpdate.Controllers
             _context.LocationGalleries.Add(locationGallery);
             await _context.SaveChangesAsync();
 
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = urlService == null ? "dashboard" : urlService?.RequestUrl?.Url;
+
             var url = Url.Action(nameof(GetGalleriesByLocationId), new { locationId = locationGallery.LocationID });
-            return Created(url, locationGallery);
+
+            // Return both locationGallery and requestUrl
+            return Created(url, new { locationGallery, requestUrl });
         }
 
+
         // PUT: api/LocationGallery/{id}
-        [HttpPut("{id}")]
+        [HttpPut("edit/{id}")]
         public async Task<IActionResult> PutLocationGallery(int id, LocationGalleryInsertModel model)
         {
             if (id <= 0)
@@ -106,11 +119,24 @@ namespace TravelUpdate.Controllers
                 }
             }
 
-            return NoContent();
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = urlService == null ? "dashboard" : urlService?.RequestUrl?.Url;
+
+            var url = Url.Action(nameof(GetGalleriesByLocationId), new { locationId = locationGallery.LocationID });
+
+            // Return both locationGallery and requestUrl
+            return Created(url, new { locationGallery, requestUrl });
         }
 
         // DELETE: api/LocationGallery/{id}
-        [HttpDelete("{id}")]
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteLocationGallery(int id)
         {
             var locationGallery = await _context.LocationGalleries.FindAsync(id);
@@ -149,5 +175,31 @@ namespace TravelUpdate.Controllers
         {
             return _context.LocationGalleries.Any(e => e.LocationGalleryID == id);
         }
+
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
+        }
+
+
     }
 }

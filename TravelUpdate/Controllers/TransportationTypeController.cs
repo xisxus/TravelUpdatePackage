@@ -19,7 +19,7 @@ namespace TravelUpdate.Controllers
         }
 
         // GET: api/TransportationType/get-all
-        [HttpGet("get-all")]
+        [HttpGet("get")]
         public async Task<IActionResult> GetAllTypes()
         {
             var types = await _context.TransportationTypes
@@ -38,7 +38,7 @@ namespace TravelUpdate.Controllers
         }
 
         // GET: api/TransportationType/get-by-id/{id}
-        [HttpGet("get-by-id/{id}")]
+        [HttpGet("get/{id}")]
         public async Task<IActionResult> GetTypeById(int id)
         {
             var type = await _context.TransportationTypes
@@ -63,7 +63,7 @@ namespace TravelUpdate.Controllers
         }
 
         // POST: api/TransportationType/add-type
-        [HttpPost("add-type")]
+        [HttpPost("add")]
         public async Task<IActionResult> AddType([FromBody] TransportationTypeInsertModel model, string? customUrl = null)
         {
             if (!ModelState.IsValid)
@@ -79,19 +79,38 @@ namespace TravelUpdate.Controllers
             await _context.TransportationTypes.AddAsync(newType);
             await _context.SaveChangesAsync();
 
-            var url = customUrl ?? "/transportation-types"; // Custom URL or default
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url;
+            }
+
 
             return Ok(new
             {
                 success = true,
                 message = "Transportation type added successfully.",
                 typeId = newType.TransportationTypeID,
-                url // Include custom URL in response
+                url = requestUrl
             });
         }
 
         // PUT: api/TransportationType/update-type/{id}
-        [HttpPut("update-type/{id}")]
+        [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateType(int id, [FromBody] TransportationTypeInsertModel model)
         {
             if (!ModelState.IsValid)
@@ -110,15 +129,36 @@ namespace TravelUpdate.Controllers
             _context.TransportationTypes.Update(type);
             await _context.SaveChangesAsync();
 
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url;
+            }
+
             return Ok(new
             {
                 success = true,
-                message = "Transportation type updated successfully."
+                message = "Transportation type updated successfully.",
+                typeId = type.TransportationTypeID,
+                url = requestUrl
             });
         }
 
         // DELETE: api/TransportationType/delete-type/{id}
-        [HttpDelete("delete-type/{id}")]
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteType(int id)
         {
             var type = await _context.TransportationTypes.FindAsync(id);
@@ -130,11 +170,55 @@ namespace TravelUpdate.Controllers
             _context.TransportationTypes.Remove(type);
             await _context.SaveChangesAsync();
 
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url;
+            }
+
             return Ok(new
             {
                 success = true,
                 message = "Transportation type deleted successfully."
             });
+        }
+
+
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
         }
     }
 

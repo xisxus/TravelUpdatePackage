@@ -60,8 +60,8 @@ namespace TravelUpdate.Controllers
         }
 
         // POST: api/Location
-        [HttpPost]
-        public async Task<ActionResult<Location>> PostLocation(LocationInsertModel model)
+        [HttpPost("add")]
+        public async Task<ActionResult> PostLocation(LocationInsertModel model)
         {
             var location = new Location
             {
@@ -73,12 +73,25 @@ namespace TravelUpdate.Controllers
             _context.Locations.Add(location);
             await _context.SaveChangesAsync();
 
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = urlService == null ? "dashboard" : urlService?.RequestUrl?.Url;
+
             var url = Url.Action(nameof(GetLocation), new { id = location.LocationID });
-            return Created(url, location);
+
+            // Return both location and requestUrl
+            return Created(url, new { location, requestUrl });
         }
 
+
         // PUT: api/Location/{id}
-        [HttpPut("{id}")]
+        [HttpPut("edit/{id}")]
         public async Task<IActionResult> PutLocation(int id, LocationInsertModel model)
         {
             if (id <= 0)
@@ -114,11 +127,24 @@ namespace TravelUpdate.Controllers
                 }
             }
 
-            return NoContent();
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = urlService == null ? "dashboard" : urlService?.RequestUrl?.Url;
+
+            var url = Url.Action(nameof(GetLocation), new { id = location.LocationID });
+
+            // Return both location and requestUrl
+            return Created(url, new { location, requestUrl });
         }
 
         // DELETE: api/Location/{id}
-        [HttpDelete("{id}")]
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteLocation(int id)
         {
             var location = await _context.Locations.FindAsync(id);
@@ -137,5 +163,31 @@ namespace TravelUpdate.Controllers
         {
             return _context.Locations.Any(e => e.LocationID == id);
         }
+
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
+        }
+
+
     }
 }

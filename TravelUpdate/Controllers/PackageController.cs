@@ -24,8 +24,8 @@ namespace TravelUpdate.Controllers
 
         #region team2
 
-        [HttpPost("add-package")]
-        public async Task<IActionResult> CreatePackage([FromBody] PackageInsertModel model, [FromQuery] string? customUrl = null)
+        [HttpPost("add")]
+        public async Task<IActionResult> CreatePackage([FromBody] PackageInsertModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -69,14 +69,34 @@ namespace TravelUpdate.Controllers
             _context.Packages.Add(package);
             await _context.SaveChangesAsync();
 
-            var url = customUrl ?? "getpackage";
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url + "/" + package.PackageID;
+            }
+
+
 
             return CreatedAtAction(nameof(CreatePackage), new { packageId = package.PackageID }, new
             {
                 success = true,
                 message = "Package created successfully.",
                 packageId = package.PackageID,
-                url
+                url = requestUrl 
             });
         }
 
@@ -142,7 +162,7 @@ namespace TravelUpdate.Controllers
         }
 
 
-        [HttpPost("add-package-details/{packageId}")]
+        [HttpPost("details/add/{packageId}")]
         public async Task<IActionResult> AddPackageDetails(int packageId, [FromBody] PackageDetailsInsertModel model)
         {
             var package = await _context.Packages.FindAsync(packageId);
@@ -167,13 +187,35 @@ namespace TravelUpdate.Controllers
             _context.PackageDetails.Add(packageDetails);
             await _context.SaveChangesAsync();
 
-            
+
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url + "/" + packageId;
+            }
+
+
             return Ok(new
             {
                 success = true,
                 message = "Package details added successfully.",
                 packageDetailsId = packageDetails.PackageDetailsID,
-                packageId = packageId 
+                packageId = packageId ,
+                url = requestUrl
             });
         }
 

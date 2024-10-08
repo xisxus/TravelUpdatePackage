@@ -18,13 +18,6 @@ namespace TravelUpdate.Controllers
             _context = context;
         }
 
-        // GET: api/MealTypes
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<MealType>>> GetMealTypes()
-        {
-            return await _context.MealTypes.ToListAsync();
-        }
-
         // GET: api/MealTypes/5
         [HttpGet("{id}")]
         public async Task<ActionResult<MealType>> GetMealType(int id)
@@ -39,10 +32,10 @@ namespace TravelUpdate.Controllers
             return mealType;
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("edit/{id}")]
         public async Task<IActionResult> PutMealType(int id, MealType mealType)
         {
-            if (id != mealType.MealTypeID)
+            if (id <= 0)
             {
                 return BadRequest();
             }
@@ -65,20 +58,52 @@ namespace TravelUpdate.Controllers
                 }
             }
 
-            return NoContent();
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+
+            var requestUrl = urlService == null ? "dashboard" :
+                urlService?.RequestUrl?.Url;
+
+            var url = Url.Action(nameof(GetMealType), new { id = mealType.MealTypeID });
+
+            return Created(url, new { mealType, requestUrl });
         }
 
-        [HttpPost]
+        [HttpPost("add")]
         public async Task<ActionResult<MealType>> PostMealType(MealType mealType)
         {
             _context.MealTypes.Add(mealType);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetMealType", new { id = mealType.MealTypeID }, mealType);
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+
+            var requestUrl = urlService == null ? "dashboard" :
+                urlService?.RequestUrl?.Url;
+
+            var url = Url.Action(nameof(GetMealType), new { id = mealType.MealTypeID });
+
+
+            return Created(url, new { mealType, requestUrl });
         }
 
         // DELETE: api/MealTypes/5
-        [HttpDelete("{id}")]
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteMealType(int id)
         {
             var mealType = await _context.MealTypes.FindAsync(id);
@@ -96,6 +121,29 @@ namespace TravelUpdate.Controllers
         private bool MealTypeExists(int id)
         {
             return _context.MealTypes.Any(e => e.MealTypeID == id);
+        }
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
         }
     }
 }

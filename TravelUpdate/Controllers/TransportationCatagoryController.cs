@@ -18,8 +18,8 @@ namespace TravelUpdate.Controllers
             _context = context;
         }
 
-        // GET: api/TransportationCatagory/get-all
-        [HttpGet("get-all")]
+        // GET: api/TransportationCatagory/get
+        [HttpGet("get")]
         public async Task<IActionResult> GetAllCategories()
         {
             var categories = await _context.TransportationCatagories
@@ -37,8 +37,8 @@ namespace TravelUpdate.Controllers
             });
         }
 
-        // GET: api/TransportationCatagory/get-by-id/{id}
-        [HttpGet("get-by-id/{id}")]
+        // GET: api/TransportationCatagory/get/{id}
+        [HttpGet("get/{id}")]
         public async Task<IActionResult> GetCategoryById(int id)
         {
             var category = await _context.TransportationCatagories
@@ -62,8 +62,8 @@ namespace TravelUpdate.Controllers
             });
         }
 
-        // POST: api/TransportationCatagory/add-category
-        [HttpPost("add-category")]
+        // POST: api/TransportationCatagory/add
+        [HttpPost("add")]
         public async Task<IActionResult> AddCategory([FromBody] TransportationCatagoryInsertModel model, string? customUrl = null)
         {
             if (!ModelState.IsValid)
@@ -79,19 +79,38 @@ namespace TravelUpdate.Controllers
             await _context.TransportationCatagories.AddAsync(newCategory);
             await _context.SaveChangesAsync();
 
-            var url = customUrl ?? "get-all"; // Custom URL or default
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url;
+            }
+
+            //var url = customUrl ?? "get-all"; // Custom URL or default
 
             return Ok(new
             {
                 success = true,
                 message = "Transportation category added successfully.",
                 categoryId = newCategory.TransportationCatagoryID,
-                url // Include custom URL in response
+                url = requestUrl // Include custom URL in response
             });
         }
 
         // PUT: api/TransportationCatagory/update-category/{id}
-        [HttpPut("update-category/{id}")]
+        [HttpPut("update/{id}")]
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] TransportationCatagoryInsertModel model)
         {
             if (!ModelState.IsValid)
@@ -118,7 +137,7 @@ namespace TravelUpdate.Controllers
         }
 
         // DELETE: api/TransportationCatagory/delete-category/{id}
-        [HttpDelete("delete-category/{id}")]
+        [HttpDelete("delete/{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             var category = await _context.TransportationCatagories.FindAsync(id);
@@ -135,6 +154,30 @@ namespace TravelUpdate.Controllers
                 success = true,
                 message = "Transportation category deleted successfully."
             });
+        }
+
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
         }
     }
 }
