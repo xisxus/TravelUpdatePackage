@@ -1154,7 +1154,7 @@ namespace TravelUpdate.Controllers
         }
 
 
-        [HttpGet("get-schedule/{packageID}/{scheduleID}")]
+        [HttpGet("schedule/{packageID}/{scheduleID}")]
         public async Task<IActionResult> GetScheduleById(int packageID, int scheduleID)
         {
             
@@ -1248,10 +1248,31 @@ namespace TravelUpdate.Controllers
 
             await _context.SaveChangesAsync();
 
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+             .Include(u => u.RequestUrl)
+             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService?.RequestUrl?.Url +  "/" + scheduleID;
+            }
+
+
             return Ok(new
             {
                 success = true,
-                message = "Schedule updated successfully."
+                message = "Schedule updated successfully.",
+                url = requestUrl,
             });
         }
 
