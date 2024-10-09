@@ -1,56 +1,64 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TravelUpdate.Dal;
+
 using TravelUpdate.Models.InputModels;
 using TravelUpdate.Models;
-using TravelUpdate.Models.OutputModels;
+using TravelUpdate.Dal;
+using Microsoft.EntityFrameworkCore;
 
 namespace TravelUpdate.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class RoomTypeController : ControllerBase
+    [Route("api/[controller]")]
+    public class RoomTypesController : ControllerBase
     {
         private readonly TravelDBContext _context;
 
-        public RoomTypeController(TravelDBContext context)
+        public RoomTypesController(TravelDBContext context)
         {
             _context = context;
         }
 
+        // GET: api/RoomTypes
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RoomTypeOutput>>> GetRoomTypes()
+        public async Task<ActionResult<IEnumerable<RoomTypeDTO>>> GetRoomTypes()
         {
-            return await _context.RoomTypes
-                .Select(r => new RoomTypeOutput
-                {
-                    RoomTypeID = r.RoomTypeID,
-                    TypeName = r.TypeName
-                }).ToListAsync();
+            var roomTypes = await _context.RoomTypes.ToListAsync();
+            return roomTypes.Select(rt => new RoomTypeDTO { RoomTypeID = rt.RoomTypeID, TypeName = rt.TypeName }).ToList();
         }
 
-        // POST: api/RoomTypeOutput
-        [HttpPost("add")]
-        public async Task<ActionResult<RoomType>> PostRoomType(RoomTypeInsertModel model)
+        // GET: api/RoomTypes/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<RoomTypeDTO>> GetRoomType(int id)
+        {
+            var roomType = await _context.RoomTypes.FindAsync(id);
+            if (roomType == null)
+            {
+                return NotFound();
+            }
+            return new RoomTypeDTO { RoomTypeID = roomType.RoomTypeID, TypeName = roomType.TypeName };
+        }
+
+        // POST: api/RoomTypes
+        [HttpPost("add/type")]
+        public async Task<ActionResult<RoomTypeDTO>> CreateRoomType([FromForm] RoomTypeDTO roomTypeDTO)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var roomType = new RoomType
+            RoomType roomType = new RoomType
             {
-                TypeName = model.TypeName
+                TypeName = roomTypeDTO.TypeName
             };
 
             _context.RoomTypes.Add(roomType);
             await _context.SaveChangesAsync();
 
-
             var request = HttpContext.Request;
             var rowPath = request.Path;
-            var path = RemoveLastSegment(rowPath);
+            var path = UrlTask.RemoveLastSegment(rowPath);
 
             var urlService = await _context.UrlServices
                  .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
@@ -64,44 +72,23 @@ namespace TravelUpdate.Controllers
             }
             else
             {
-                requestUrl = urlService?.RequestUrl?.Url;
+                requestUrl = urlService?.RequestUrl?.Url ?? "dashboard";
             }
 
 
 
-            // Include a custom URL in the success message
-            return CreatedAtAction(nameof(GetRoomType), new { id = roomType.RoomTypeID  },  new { url = requestUrl });
+
+            // Return only id and url in the response
+            return CreatedAtAction(nameof(GetRoomType), new { id = roomType.RoomTypeID }, new { id = roomType.RoomTypeID, url = requestUrl });
         }
 
-        // GET: api/RoomType/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<RoomTypeOutput>> GetRoomType(int id)
+        // PUT: api/RoomTypes/5
+        [HttpPut("update/type/{id}")]
+        public async Task<IActionResult> UpdateRoomType(int id, [FromForm] RoomTypeDTO roomTypeDTO)
         {
-            var roomType = await _context.RoomTypes.FindAsync(id);
-
-            if (roomType == null)
+            if (!ModelState.IsValid)
             {
-                return NotFound();
-            }
-
-            var output = new RoomTypeOutput
-            {
-                RoomTypeID = roomType.RoomTypeID,
-                TypeName = roomType.TypeName
-            };
-
-            return output;
-        }
-
-        
-
-        // PUT: api/RoomTypeOutput/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutRoomType(int id, RoomTypeUpdateModel model)
-        {
-            if (id != model.RoomTypeID)
-            {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
 
             var roomType = await _context.RoomTypes.FindAsync(id);
@@ -110,31 +97,35 @@ namespace TravelUpdate.Controllers
                 return NotFound();
             }
 
-            roomType.TypeName = model.TypeName;
+            roomType.TypeName = roomTypeDTO.TypeName;
 
-            _context.Entry(roomType).State = EntityState.Modified;
+            _context.RoomTypes.Update(roomType);
+            await _context.SaveChangesAsync();
 
-            try
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+                  .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                  .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
             {
-                await _context.SaveChangesAsync();
+                requestUrl = "dashboard";
             }
-            catch (DbUpdateConcurrencyException)
+            else
             {
-                if (!RoomTypeExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                requestUrl = urlService.RequestUrl?.Url ?? "dashboard";
             }
 
-            return NoContent();
+            return Ok(new { RoomTypeID = roomType.RoomTypeID, Url = requestUrl });
         }
 
 
-        // DELETE: api/RoomTypeOutput/5
+        // DELETE: api/RoomTypes/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRoomType(int id)
         {
@@ -149,13 +140,6 @@ namespace TravelUpdate.Controllers
 
             return NoContent();
         }
-
-        private bool RoomTypeExists(int id)
-        {
-            return _context.RoomTypes.Any(e => e.RoomTypeID == id);
-        }
-
-
         public static string RemoveLastSegment(string url)
         {
             if (string.IsNullOrEmpty(url))

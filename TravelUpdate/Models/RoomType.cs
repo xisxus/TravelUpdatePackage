@@ -6,6 +6,6 @@
         public string TypeName { get; set; }
 
         public ICollection<Room> Rooms { get; set; }
-        public ICollection<RoomSubType> RoomSubTypes { get; set; }
+      
     }
 }

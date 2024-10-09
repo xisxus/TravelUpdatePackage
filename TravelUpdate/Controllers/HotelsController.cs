@@ -15,6 +15,8 @@ namespace TravelUpdate.Controllers
     {
         private readonly TravelDBContext _context;
 
+
+
         public HotelsController(TravelDBContext context)
         {
             _context = context;
@@ -23,10 +25,18 @@ namespace TravelUpdate.Controllers
         public IActionResult GetHotels()
         {
             var hotels = _context.Hotels
-                
+
                 .Include(h => h.HotelImages)
                 .Include(h => h.HotelFacilities)
-                .Include(h => h.Rooms);
+                .Include(h => h.Rooms)
+                .Select(h => new
+                {
+                    h.HotelID,
+                    h.HotelName,
+                    h.HotelFacilities,
+
+                    h.HotelImages,
+                });
 
             return Ok(hotels);
         }
@@ -36,10 +46,18 @@ namespace TravelUpdate.Controllers
         public IActionResult GetHotel(int ID)
         {
             var hotel = _context.Hotels
-                
+
                 .Include(h => h.HotelImages)
                 .Include(h => h.HotelFacilities)
                 .Include(h => h.Rooms)
+                .Select(h => new
+                {
+                    h.HotelID,
+                    h.HotelName,
+                    h.HotelFacilities,
+
+                    h.HotelImages,
+                })
                 .FirstOrDefault(h => h.HotelID == ID);
 
             if (hotel == null)
@@ -51,7 +69,7 @@ namespace TravelUpdate.Controllers
         }
 
         // POST api/Hotels
-        [HttpPost]
+        [HttpPost("add/hotel")]
         public async Task<ActionResult<int>> CreateHotel([FromBody] FacilityWiseHotel facilityWiseHotel)
         {
             if (!ModelState.IsValid)
@@ -59,6 +77,7 @@ namespace TravelUpdate.Controllers
                 return BadRequest(ModelState);
             }
 
+            // Create a new Hotel entity and map fields from DTO
             Hotel hotel = new Hotel
             {
                 HotelName = facilityWiseHotel.HotelName,
@@ -70,9 +89,11 @@ namespace TravelUpdate.Controllers
                 LocationID = facilityWiseHotel.LocationId
             };
 
+            // Add the hotel to the database context
             _context.Hotels.Add(hotel);
             await _context.SaveChangesAsync();
 
+            // Add hotel facilities if provided in the DTO
             foreach (var hotelFacility in facilityWiseHotel.HotelFacilities)
             {
                 HotelFacility hf = new HotelFacility
@@ -87,23 +108,48 @@ namespace TravelUpdate.Controllers
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetHotel), new { id = hotel.HotelID }, hotel.HotelID);
+            // Construct the URL based on the current request
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService.RequestUrl?.Url ?? "dashboard";
+            }
+
+            // Return response containing `id` and `url`
+            return Ok(new { id = hotel.HotelID, url = requestUrl });
         }
 
+
         // PUT api/Hotels/5
-        [HttpPut("{id}")]
+        [HttpPut("update/hotel/{id}")]
         public async Task<IActionResult> UpdateHotel(int id, [FromBody] FacilityWiseHotel facilityWiseHotel)
         {
+            // Check for ID mismatch between request URL and DTO
             if (id != facilityWiseHotel.HotelId)
             {
                 return BadRequest();
             }
 
+            // Validate the model state
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            // Fetch the hotel with related entities
             var hotel = await _context.Hotels
                 .Include(h => h.HotelFacilities)
                 .ThenInclude(hf => hf.Facility)
@@ -115,6 +161,7 @@ namespace TravelUpdate.Controllers
                 return NotFound();
             }
 
+            // Update hotel properties with the values from the DTO
             hotel.HotelName = facilityWiseHotel.HotelName;
             hotel.Description = facilityWiseHotel.Description;
             hotel.StarRating = facilityWiseHotel.StarRating;
@@ -123,12 +170,18 @@ namespace TravelUpdate.Controllers
             hotel.HotelCode = facilityWiseHotel.HotelCode;
             hotel.LocationID = facilityWiseHotel.LocationId;
 
+            // Mark the entity as modified
             _context.Entry(hotel).State = EntityState.Modified;
 
+            // Update or add hotel facilities
             foreach (var hotelFacility in facilityWiseHotel.HotelFacilities)
             {
-                if (hotelFacility.HotelFacilityId == 0)
+                var existingHotelFacility = await _context.HotelFacilities
+                    .FirstOrDefaultAsync(hf => hf.HotelID == hotel.HotelID && hf.FacilityID == hotelFacility.FacilityID);
+
+                if (existingHotelFacility == null)
                 {
+                    // Add new facility if not found
                     HotelFacility hf = new HotelFacility
                     {
                         HotelID = hotel.HotelID,
@@ -140,20 +193,34 @@ namespace TravelUpdate.Controllers
                 }
                 else
                 {
-                    var existingHotelFacility = await _context.HotelFacilities
-                        .FirstOrDefaultAsync(hf => hf.HotelFacilityID == hotelFacility.HotelFacilityId);
-
-                    if (existingHotelFacility != null)
-                    {
-                        existingHotelFacility.FacilityID = hotelFacility.FacilityID;
-                        existingHotelFacility.UpdatedOn = DateTime.UtcNow;
-                    }
+                    // Update the existing facility timestamp
+                    existingHotelFacility.UpdatedOn = DateTime.UtcNow;
                 }
             }
 
             await _context.SaveChangesAsync();
 
-            return Ok(hotel.HotelID);
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
+
+            var urlService = await _context.UrlServices
+                 .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                 .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService.RequestUrl?.Url ?? "dashboard";
+            }
+
+            // Corrected return statement with id and url
+            return Ok(new { id = hotel.HotelID, url = requestUrl });
         }
 
         // DELETE api/Hotels/5
@@ -175,6 +242,29 @@ namespace TravelUpdate.Controllers
             await _context.SaveChangesAsync();
 
             return Ok("Deleted succesfully");
+        }
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
         }
     }
 }

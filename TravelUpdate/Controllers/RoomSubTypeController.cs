@@ -1,101 +1,88 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TravelUpdate.Dal;
-using TravelUpdate.Models;
+
 using TravelUpdate.Models.InputModels;
-using TravelUpdate.Models.OutputModels;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using TravelUpdate.Models.InputModels.TravelUpdate.Models.InputModels;
+using TravelUpdate.Models;
+using TravelUpdate.Dal;
+using Microsoft.EntityFrameworkCore;
 
 namespace TravelUpdate.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class RoomSubTypeController : ControllerBase
+    [Route("api/[controller]")]
+    public class RoomSubTypesController : ControllerBase
     {
         private readonly TravelDBContext _context;
 
-        public RoomSubTypeController(TravelDBContext context)
+        public RoomSubTypesController(TravelDBContext context)
         {
             _context = context;
         }
 
-        // GET: api/RoomSubType
+        // GET: api/RoomSubTypes
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RoomSubTypeOutput>>> GetRoomSubTypes()
+        public async Task<ActionResult<IEnumerable<RoomSubTypeDTO>>> GetRoomSubTypes()
         {
-            var roomSubTypes = await _context.RoomSubTypes
-                .Include(rs => rs.RoomType) // Include the related RoomType
-                .Select(rs => new RoomSubTypeOutput
-                {
-                    RoomSubTypeID = rs.RoomSubTypeID,
-                    SubTypeName = rs.SubTypeName,
-                    RoomTypeID = rs.RoomTypeID,
-                    RoomType = new RoomTypeOutput
-                    {
-                        RoomTypeID = rs.RoomType.RoomTypeID,
-                        TypeName = rs.RoomType.TypeName
-                    }
-                })
-                .ToListAsync();
-
-            return roomSubTypes;
+            var roomSubTypes = await _context.RoomSubTypes.ToListAsync();
+            return roomSubTypes.Select(rst => new RoomSubTypeDTO { RoomSubTypeID = rst.RoomSubTypeID, SubTypeName = rst.SubTypeName }).ToList();
         }
 
-        // GET: api/RoomSubType/{id}
+        // GET: api/RoomSubTypes/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<RoomSubTypeOutput>> GetRoomSubType(int id)
+        public async Task<ActionResult<RoomSubTypeDTO>> GetRoomSubType(int id)
         {
-            var roomSubType = await _context.RoomSubTypes
-                .Include(rs => rs.RoomType) // Include the related RoomType
-                .Where(rs => rs.RoomSubTypeID == id)
-                .Select(rs => new RoomSubTypeOutput
-                {
-                    RoomSubTypeID = rs.RoomSubTypeID,
-                    SubTypeName = rs.SubTypeName,
-                    RoomTypeID = rs.RoomTypeID,
-                    RoomType = new RoomTypeOutput
-                    {
-                        RoomTypeID = rs.RoomType.RoomTypeID,
-                        TypeName = rs.RoomType.TypeName
-                    }
-                })
-                .FirstOrDefaultAsync();
-
+            var roomSubType = await _context.RoomSubTypes.FindAsync(id);
             if (roomSubType == null)
             {
                 return NotFound();
             }
-
-            return roomSubType;
+            return new RoomSubTypeDTO { RoomSubTypeID = roomSubType.RoomSubTypeID, SubTypeName = roomSubType.SubTypeName };
         }
 
-        // POST: api/RoomSubType
-        [HttpPost]
-        public async Task<ActionResult<RoomSubType>> PostRoomSubType(RoomSubTypeInsertModel model)
+        // POST: api/RoomSubTypes
+        [HttpPost("add/sub/type")]
+        public async Task<ActionResult<RoomSubTypeDTO>> CreateRoomSubType([FromForm] RoomSubTypeDTO roomSubTypeDTO)
         {
-            var roomSubType = new RoomSubType
+            if (!ModelState.IsValid)
             {
-                SubTypeName = model.SubTypeName,
-                RoomTypeID = model.RoomTypeID
+                return BadRequest(ModelState);
+            }
+
+            RoomSubType roomSubType = new RoomSubType
+            {
+                SubTypeName = roomSubTypeDTO.SubTypeName
             };
 
             _context.RoomSubTypes.Add(roomSubType);
             await _context.SaveChangesAsync();
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
 
-            var url = Url.Action(nameof(GetRoomSubType), new { id = roomSubType.RoomSubTypeID });
-            return Created(url, roomSubType);
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService.RequestUrl?.Url ?? "dashboard";
+            }
+
+            return CreatedAtAction(nameof(GetRoomSubType), new { id = roomSubType.RoomSubTypeID }, new { id = roomSubType.RoomSubTypeID, url = requestUrl });
         }
 
-        // PUT: api/RoomSubType/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutRoomSubType(int id, RoomSubTypeUpdateModel model)
+        // PUT: api/RoomSubTypes/5
+        [HttpPut("update-sub-type/{id}")]
+        public async Task<IActionResult> UpdateRoomSubType(int id, [FromForm] RoomSubTypeDTO roomSubTypeDTO)
         {
-            if (id != model.RoomSubTypeID)
+            if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
 
             var roomSubType = await _context.RoomSubTypes.FindAsync(id);
@@ -104,31 +91,33 @@ namespace TravelUpdate.Controllers
                 return NotFound();
             }
 
-            roomSubType.SubTypeName = model.SubTypeName;
-            roomSubType.RoomTypeID = model.RoomTypeID;
+            roomSubType.SubTypeName = roomSubTypeDTO.SubTypeName;
 
             _context.Entry(roomSubType).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!RoomSubTypeExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
 
-            return NoContent();
+            var urlService = await _context.UrlServices
+                 .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                 .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService.RequestUrl?.Url ?? "dashboard";
+            }
+            return Ok(new { RoomSubTypeID = roomSubType.RoomSubTypeID, Url = requestUrl });
         }
 
-        // DELETE: api/RoomSubType/{id}
+        // DELETE: api/RoomSubTypes/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRoomSubType(int id)
         {
@@ -143,10 +132,28 @@ namespace TravelUpdate.Controllers
 
             return NoContent();
         }
-
-        private bool RoomSubTypeExists(int id)
+        public static string RemoveLastSegment(string url)
         {
-            return _context.RoomSubTypes.Any(e => e.RoomSubTypeID == id);
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
         }
     }
 }

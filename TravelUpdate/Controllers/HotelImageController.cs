@@ -22,23 +22,30 @@ namespace TravelUpdate.Controllers
             _env = env;
         }
 
-        [HttpPost]
+        [HttpPost("add/image")]
         public async Task<ActionResult<InputImage>> CreateHotelImage([FromForm] InputImage inputImage)
         {
+            // Check if the incoming model state is valid
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
             string uniqueFileName = null;
+
+            // If an image file is provided, process the upload
             if (inputImage.ImageProfile != null)
             {
+                // Define the upload folder path
                 string uploadsFolder = Path.Combine(_env.ContentRootPath, "Image");
+
+                // Create the directory if it doesn't exist
                 if (!Directory.Exists(uploadsFolder))
                 {
                     Directory.CreateDirectory(uploadsFolder);
                 }
 
+                // Generate a unique file name and save the image file
                 uniqueFileName = Guid.NewGuid().ToString() + "_" + inputImage.ImageProfile.FileName;
                 string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
@@ -55,57 +62,40 @@ namespace TravelUpdate.Controllers
                 }
             }
 
+            // Create a new HotelImage entity and populate its properties
             HotelImage hotelImage = new HotelImage
             {
                 HotelID = inputImage.HotelID,
                 ImageUrl = uniqueFileName,
                 Caption = inputImage.Caption,
                 IsThumbnail = inputImage.IsThumbnail,
-                CreatedOn = DateTime.UtcNow,
-
+                CreatedOn = DateTime.UtcNow
             };
 
+            // Add the new entity to the database and save changes
             _context.HotelImages.Add(hotelImage);
             await _context.SaveChangesAsync();
 
-            InputImage outputImage = new InputImage
-            {
-                HotelImageID = hotelImage.HotelImageID,
-                ImageUrl = hotelImage.ImageUrl,
-                Caption = hotelImage.Caption,
-                IsThumbnail = hotelImage.IsThumbnail,
-                CreatedOn = hotelImage.CreatedOn,
-                HotelID = hotelImage.HotelID
-            };
+            // Retrieve the request path and URL
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
 
-            return CreatedAtAction(nameof(GetHotelImage), new { id = hotelImage.HotelImageID }, outputImage);
+            // Get the corresponding URL service record
+            var urlService = await _context.UrlServices
+                .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            // Determine the request URL or fallback to "dashboard"
+            var requestUrl = urlService?.RequestUrl?.Url ?? "dashboard";
+
+            // Return the newly created image ID and URL
+            return CreatedAtAction(nameof(GetHotelImage), new { id = hotelImage.HotelImageID }, new { id = hotelImage.HotelImageID, url = requestUrl });
         }
 
-        // GET api/HotelImage/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Outputimage>> GetHotelImage(int id)
-        {
-            HotelImage hotelImage = await _context.HotelImages.FindAsync(id);
-            if (hotelImage == null)
-            {
-                return NotFound();
-            }
-
-            Outputimage outputImage = new Outputimage
-            {
-                HotelImageID = hotelImage.HotelImageID,
-                ImageUrl = hotelImage.ImageUrl,
-                Caption = hotelImage.Caption,
-                IsThumbnail = hotelImage.IsThumbnail,
-                CreatedOn = hotelImage.CreatedOn,
-                HotelID = hotelImage.HotelID
-            };
-
-            return outputImage;
-        }
 
         // PUT api/HotelImage/5
-        [HttpPut("{id}")]
+        [HttpPut("update/image/{id}")]
         public async Task<IActionResult> UpdateHotelImage(int id, [FromForm] InputImage inputImage)
         {
             if (!ModelState.IsValid)
@@ -136,8 +126,40 @@ namespace TravelUpdate.Controllers
 
             _context.Entry(hotelImage).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
 
-            InputImage outputImage = new InputImage
+            var urlService = await _context.UrlServices
+                 .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                 .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService.RequestUrl?.Url ?? "dashboard";
+            }
+
+
+            return Ok(new { id = hotelImage.HotelImageID, url = requestUrl });
+        }
+
+        // GET api/HotelImage/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Outputimage>> GetHotelImage(int id)
+        {
+            HotelImage hotelImage = await _context.HotelImages.FindAsync(id);
+            if (hotelImage == null)
+            {
+                return NotFound();
+            }
+
+            Outputimage outputImage = new Outputimage
             {
                 HotelImageID = hotelImage.HotelImageID,
                 ImageUrl = hotelImage.ImageUrl,
@@ -147,8 +169,10 @@ namespace TravelUpdate.Controllers
                 HotelID = hotelImage.HotelID
             };
 
-            return Ok(outputImage);
+            return outputImage;
         }
+
+
 
         // DELETE api/HotelImage/5
         [HttpDelete("{id}")]
@@ -164,6 +188,29 @@ namespace TravelUpdate.Controllers
             await _context.SaveChangesAsync();
 
             return Ok("Deleted Successfully");
+        }
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
         }
     }
 }

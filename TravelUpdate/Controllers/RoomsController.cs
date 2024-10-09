@@ -72,45 +72,63 @@ namespace TravelUpdate.Controllers
         }
 
         // POST: api/Rooms
-        [HttpPost]
-        public IActionResult CreateRoom(RoomDTOs roomDTO)
+        [HttpPost("add/room")]
+        public  IActionResult CreateRoom(RoomDTOs roomDTO)
         {
-            var hotel = _context.Hotels.Find(roomDTO.HotelID);
+            var room = _context.Hotels.Find(roomDTO.HotelID);
             var roomType = _context.RoomTypes.Find(roomDTO.RoomTypeID);
             var roomSubType = _context.RoomSubTypes.Find(roomDTO.RoomSubTypeID);
 
-            if (hotel == null || roomType == null || roomSubType == null)
+            if (room == null || roomType == null || roomSubType == null)
             {
                 return NotFound();
             }
 
-            var room = new Room
+            var rooms = new Room
             {
                 AveragePrice = roomDTO.AveragePrice,
                 MaxOccupancy = roomDTO.MaxOccupancy,
                 IsAvailable = roomDTO.IsAvailable,
                 HotelID = roomDTO.HotelID,
-                Hotel = hotel,
                 RoomTypeID = roomDTO.RoomTypeID,
-                RoomType = roomType,
                 RoomSubTypeID = roomDTO.RoomSubTypeID,
-                RoomSubType = roomSubType
             };
 
-            _context.Rooms.Add(room);
+            _context.Rooms.Add(rooms);
             _context.SaveChanges();
-            return CreatedAtAction(nameof(GetRoom), new { id = room.RoomID }, room.RoomID);
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
+
+            var urlService =  _context.UrlServices
+                .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService.Result.RequestUrl.Url;
+            }
+            // Return only `id` and `url` in the response
+            return Ok(new { id = rooms.RoomID, url = requestUrl });
         }
 
         // PUT: api/Rooms/5
-        [HttpPut("{id}")]
-        public IActionResult UpdateRoom(int id, RoomDTOs roomDTO)
+        [HttpPut("update/room/{id}")]
+        public  IActionResult UpdateRoom(int id, RoomDTOs roomDTO)
         {
             var room = _context.Rooms
                 .Include(r => r.Hotel)
                 .Include(r => r.RoomType)
                 .Include(r => r.RoomSubType)
                 .FirstOrDefault(r => r.RoomID == id);
+
             if (room == null)
             {
                 return NotFound();
@@ -125,20 +143,39 @@ namespace TravelUpdate.Controllers
                 return NotFound();
             }
 
+            // Update room properties
             room.AveragePrice = roomDTO.AveragePrice;
             room.MaxOccupancy = roomDTO.MaxOccupancy;
             room.IsAvailable = roomDTO.IsAvailable;
             room.HotelID = roomDTO.HotelID;
-            room.Hotel = hotel;
             room.RoomTypeID = roomDTO.RoomTypeID;
-            room.RoomType = roomType;
             room.RoomSubTypeID = roomDTO.RoomSubTypeID;
-            room.RoomSubType = roomSubType;
 
             _context.Rooms.Update(room);
             _context.SaveChanges();
-            return Ok(room.RoomID);
+
+            var request = HttpContext.Request;
+            var rowPath = request.Path;
+            var path = UrlTask.RemoveLastSegment(rowPath);
+
+            var urlService =  _context.UrlServices
+                .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
+
+            var requestUrl = "";
+
+            if (urlService == null)
+            {
+                requestUrl = "dashboard";
+            }
+            else
+            {
+                requestUrl = urlService.Result.RequestUrl.Url;
+            }
+            // Return only the updated `id` and `url` in the response
+            return Ok(new { id = room.RoomID, url = requestUrl });
         }
+
         // DELETE: api/Rooms/5
         [HttpDelete("{id}")]
         public IActionResult DeleteRoom(int id)
@@ -152,6 +189,29 @@ namespace TravelUpdate.Controllers
             _context.Rooms.Remove(room);
             _context.SaveChanges();
             return Ok("Deleted Sucessfull");
+        }
+        public static string RemoveLastSegment(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return url;
+            }
+
+            url = url.TrimStart('/');
+
+            var segments = url.Split('/');
+
+            if (segments.Length > 1)
+            {
+                var lastSegment = segments[^1];
+
+                if (int.TryParse(lastSegment, out _))
+                {
+                    return string.Join("/", segments, 0, segments.Length - 1);
+                }
+            }
+
+            return url;
         }
     }
 }

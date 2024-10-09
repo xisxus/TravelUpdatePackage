@@ -245,11 +245,11 @@ namespace TravelUpdate.Dal
             base.OnModelCreating(modelBuilder);
 
 
-            modelBuilder.Entity<RoomType>()
-            .HasMany(rt => rt.RoomSubTypes)
-            .WithOne(rs => rs.RoomType)
-            .HasForeignKey(rs => rs.RoomTypeID)
-            .OnDelete(DeleteBehavior.Restrict); 
+            //modelBuilder.Entity<RoomType>()
+            //.HasMany(rt => rt.RoomSubTypes)
+            //.WithOne(rs => rs.RoomType)
+            //.HasForeignKey(rs => rs.RoomTypeID)
+            //.OnDelete(DeleteBehavior.Restrict); 
 
             modelBuilder.Entity<Room>()
                 .HasOne(r => r.RoomType)
