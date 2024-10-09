@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TravelUpdate.Dal;
 
@@ -11,9 +12,11 @@ using TravelUpdate.Dal;
 namespace TravelUpdate.Migrations
 {
     [DbContext(typeof(TravelDBContext))]
-    partial class TravelDBContextModelSnapshot : ModelSnapshot
+    [Migration("20241009001855_urll22")]
+    partial class urll22
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

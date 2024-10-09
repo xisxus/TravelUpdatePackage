@@ -75,8 +75,8 @@ namespace TravelUpdate.Controllers
             var path = RemoveLastSegment(rowPath);
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                  .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                  .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -194,8 +194,8 @@ namespace TravelUpdate.Controllers
             var path = RemoveLastSegment(rowPath);
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                 .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                 .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -1116,8 +1116,8 @@ namespace TravelUpdate.Controllers
             var path = RemoveLastSegment(rowPath);
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                 .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                 .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -1178,8 +1178,8 @@ namespace TravelUpdate.Controllers
             var path = RemoveLastSegment(rowPath);
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                  .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                  .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -1234,8 +1234,8 @@ namespace TravelUpdate.Controllers
             var path = RemoveLastSegment(rowPath);
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -1295,8 +1295,8 @@ namespace TravelUpdate.Controllers
             var path = RemoveLastSegment(rowPath);
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                  .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                  .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -1414,8 +1414,8 @@ namespace TravelUpdate.Controllers
             var path = RemoveLastSegment(rowPath);
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                 .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                 .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -1495,8 +1495,8 @@ namespace TravelUpdate.Controllers
 
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                 .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                 .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -1542,8 +1542,8 @@ namespace TravelUpdate.Controllers
 
 
             var urlService = await _context.UrlServices
-             .Include(u => u.RequestUrl)
-             .FirstOrDefaultAsync(e => e.CurrentUrl == path.ToString());
+                 .Include(u => u.RequestUrl).Include(u => u.CurrentUrl)
+                 .FirstOrDefaultAsync(e => e.CurrentUrl.Url == path.ToString());
 
             var requestUrl = "";
 
@@ -1765,7 +1765,7 @@ namespace TravelUpdate.Controllers
         #endregion
 
 
-       
+
 
         public static string RemoveLastSegment(string url)
         {
@@ -1774,7 +1774,12 @@ namespace TravelUpdate.Controllers
                 return url;
             }
 
+           
             url = url.TrimStart('/');
+            if (url.StartsWith("api/"))
+            {
+                url = url.Substring(4); 
+            }
 
             var segments = url.Split('/');
 
@@ -1790,6 +1795,7 @@ namespace TravelUpdate.Controllers
 
             return url;
         }
+
 
 
 

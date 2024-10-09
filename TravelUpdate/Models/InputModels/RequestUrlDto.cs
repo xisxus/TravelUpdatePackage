@@ -1,31 +1,28 @@
 ﻿namespace TravelUpdate.Models.InputModels
 {
-    public class RequestUrlDto
+    // DTOs
+
+    public class RequestUrlDTO
     {
         public int RequestUrlId { get; set; }
         public string Url { get; set; }
         public string? UrlName { get; set; }
     }
 
-    public class UrlServiceDto
+    public class CurrentUrlDTO
+    {
+        public int CurrentUrlId { get; set; }
+        public string Url { get; set; }
+        public string Title { get; set; }
+    }
+
+    public class UrlServiceDTO
     {
         public int UrlServiceId { get; set; }
-        public string CurrentUrl { get; set; }
-        public string? Description { get; set; }
-        public RequestUrlDto RequestUrl { get; set; }
-    }
-
-    public class CreateUrlServiceDto
-    {
-        public string CurrentUrl { get; set; }
-        public string? Description { get; set; }
+        public int CurrentUrlId { get; set; }
         public int RequestUrlId { get; set; }
+        public string? Description { get; set; }
     }
 
-    public class CreateRequestUrlDto
-    {
-        public string Url { get; set; }
-        public string? UrlName { get; set; }
-    }
 
 }

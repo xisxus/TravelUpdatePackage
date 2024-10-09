@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TravelUpdate.Dal;
 
@@ -11,9 +12,11 @@ using TravelUpdate.Dal;
 namespace TravelUpdate.Migrations
 {
     [DbContext(typeof(TravelDBContext))]
-    partial class TravelDBContextModelSnapshot : ModelSnapshot
+    [Migration("20241008225517_init11")]
+    partial class init11
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -299,215 +302,6 @@ namespace TravelUpdate.Migrations
                     b.HasKey("CountryID");
 
                     b.ToTable("Countries");
-                });
-
-            modelBuilder.Entity("TravelUpdate.Models.CurrentUrl", b =>
-                {
-                    b.Property<int>("CurrentUrlId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CurrentUrlId"));
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("CurrentUrlId");
-
-                    b.ToTable("CurrentUrls");
-
-                    b.HasData(
-                        new
-                        {
-                            CurrentUrlId = 1,
-                            Title = "API Base URL",
-                            Url = "/api"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 2,
-                            Title = "Dashboard",
-                            Url = "/dashboard"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 3,
-                            Title = "List Users",
-                            Url = "/users"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 4,
-                            Title = "Add User",
-                            Url = "/users/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 5,
-                            Title = "Edit User",
-                            Url = "/users/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 6,
-                            Title = "List Categories",
-                            Url = "/categories"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 7,
-                            Title = "Add Category",
-                            Url = "/categories/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 8,
-                            Title = "Edit Category",
-                            Url = "/categories/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 9,
-                            Title = "List Sub Categories",
-                            Url = "/sub-categories"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 10,
-                            Title = "Add Sub Category",
-                            Url = "/sub-categories/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 11,
-                            Title = "Edit Sub Category",
-                            Url = "/sub-categories/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 12,
-                            Title = "List Countries",
-                            Url = "/countries"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 13,
-                            Title = "Add Country",
-                            Url = "/countries/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 14,
-                            Title = "Edit Country",
-                            Url = "/countries/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 15,
-                            Title = "List States",
-                            Url = "/states"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 16,
-                            Title = "Add State",
-                            Url = "/states/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 17,
-                            Title = "Edit State",
-                            Url = "/states/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 18,
-                            Title = "List Packages",
-                            Url = "/packages"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 19,
-                            Title = "Add Package",
-                            Url = "/packages/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 20,
-                            Title = "Edit Package",
-                            Url = "/packages/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 21,
-                            Title = "Add Package Details",
-                            Url = "/packages/details/add/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 22,
-                            Title = "List Schedules",
-                            Url = "/schedules"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 23,
-                            Title = "Add Schedule",
-                            Url = "/schedules/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 24,
-                            Title = "Edit Schedule",
-                            Url = "/schedules/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 25,
-                            Title = "List Tour Vouchers",
-                            Url = "/tour-vouchers"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 26,
-                            Title = "Add Tour Voucher",
-                            Url = "/tour-vouchers/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 27,
-                            Title = "Edit Tour Voucher",
-                            Url = "/tour-vouchers/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 28,
-                            Title = "List Students",
-                            Url = "/students"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 29,
-                            Title = "Add Student",
-                            Url = "/students/add"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 30,
-                            Title = "Edit Student",
-                            Url = "/students/edit/:id"
-                        },
-                        new
-                        {
-                            CurrentUrlId = 31,
-                            Title = "More Example Path",
-                            Url = "/more/path/example"
-                        });
                 });
 
             modelBuilder.Entity("TravelUpdate.Models.DayCostCategory", b =>
@@ -2065,8 +1859,9 @@ namespace TravelUpdate.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UrlServiceId"));
 
-                    b.Property<int>("CurrentUrlId")
-                        .HasColumnType("int");
+                    b.Property<string>("CurrentUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
@@ -2076,11 +1871,221 @@ namespace TravelUpdate.Migrations
 
                     b.HasKey("UrlServiceId");
 
-                    b.HasIndex("CurrentUrlId");
-
                     b.HasIndex("RequestUrlId");
 
                     b.ToTable("UrlServices");
+
+                    b.HasData(
+                        new
+                        {
+                            UrlServiceId = 1,
+                            CurrentUrl = "/dashboard",
+                            Description = "Dashboard",
+                            RequestUrlId = 2
+                        },
+                        new
+                        {
+                            UrlServiceId = 2,
+                            CurrentUrl = "/users",
+                            Description = "List Users",
+                            RequestUrlId = 3
+                        },
+                        new
+                        {
+                            UrlServiceId = 3,
+                            CurrentUrl = "/users/add",
+                            Description = "Add User",
+                            RequestUrlId = 4
+                        },
+                        new
+                        {
+                            UrlServiceId = 4,
+                            CurrentUrl = "/users/edit/:id",
+                            Description = "Edit User",
+                            RequestUrlId = 5
+                        },
+                        new
+                        {
+                            UrlServiceId = 5,
+                            CurrentUrl = "/categories",
+                            Description = "List Categories",
+                            RequestUrlId = 6
+                        },
+                        new
+                        {
+                            UrlServiceId = 6,
+                            CurrentUrl = "/categories/add",
+                            Description = "Add Category",
+                            RequestUrlId = 7
+                        },
+                        new
+                        {
+                            UrlServiceId = 7,
+                            CurrentUrl = "/categories/edit/:id",
+                            Description = "Edit Category",
+                            RequestUrlId = 8
+                        },
+                        new
+                        {
+                            UrlServiceId = 8,
+                            CurrentUrl = "/sub-categories",
+                            Description = "List Sub Categories",
+                            RequestUrlId = 9
+                        },
+                        new
+                        {
+                            UrlServiceId = 9,
+                            CurrentUrl = "/sub-categories/add",
+                            Description = "Add Sub Category",
+                            RequestUrlId = 10
+                        },
+                        new
+                        {
+                            UrlServiceId = 10,
+                            CurrentUrl = "/sub-categories/edit/:id",
+                            Description = "Edit Sub Category",
+                            RequestUrlId = 11
+                        },
+                        new
+                        {
+                            UrlServiceId = 11,
+                            CurrentUrl = "/countries",
+                            Description = "List Countries",
+                            RequestUrlId = 12
+                        },
+                        new
+                        {
+                            UrlServiceId = 12,
+                            CurrentUrl = "/countries/add",
+                            Description = "Add Country",
+                            RequestUrlId = 13
+                        },
+                        new
+                        {
+                            UrlServiceId = 13,
+                            CurrentUrl = "/countries/edit/:id",
+                            Description = "Edit Country",
+                            RequestUrlId = 14
+                        },
+                        new
+                        {
+                            UrlServiceId = 14,
+                            CurrentUrl = "/states",
+                            Description = "List States",
+                            RequestUrlId = 15
+                        },
+                        new
+                        {
+                            UrlServiceId = 15,
+                            CurrentUrl = "/states/add",
+                            Description = "Add State",
+                            RequestUrlId = 16
+                        },
+                        new
+                        {
+                            UrlServiceId = 16,
+                            CurrentUrl = "/states/edit/:id",
+                            Description = "Edit State",
+                            RequestUrlId = 17
+                        },
+                        new
+                        {
+                            UrlServiceId = 17,
+                            CurrentUrl = "/packages",
+                            Description = "List Packages",
+                            RequestUrlId = 18
+                        },
+                        new
+                        {
+                            UrlServiceId = 18,
+                            CurrentUrl = "/packages/add",
+                            Description = "Add Package",
+                            RequestUrlId = 19
+                        },
+                        new
+                        {
+                            UrlServiceId = 19,
+                            CurrentUrl = "/packages/edit/:id",
+                            Description = "Edit Package",
+                            RequestUrlId = 20
+                        },
+                        new
+                        {
+                            UrlServiceId = 20,
+                            CurrentUrl = "/packages/details/add/:id",
+                            Description = "Add Package Details",
+                            RequestUrlId = 21
+                        },
+                        new
+                        {
+                            UrlServiceId = 21,
+                            CurrentUrl = "/schedules",
+                            Description = "List Schedules",
+                            RequestUrlId = 22
+                        },
+                        new
+                        {
+                            UrlServiceId = 22,
+                            CurrentUrl = "/schedules/add",
+                            Description = "Add Schedule",
+                            RequestUrlId = 23
+                        },
+                        new
+                        {
+                            UrlServiceId = 23,
+                            CurrentUrl = "/schedules/edit/:id",
+                            Description = "Edit Schedule",
+                            RequestUrlId = 24
+                        },
+                        new
+                        {
+                            UrlServiceId = 24,
+                            CurrentUrl = "/tour-vouchers",
+                            Description = "List Tour Vouchers",
+                            RequestUrlId = 25
+                        },
+                        new
+                        {
+                            UrlServiceId = 25,
+                            CurrentUrl = "/tour-vouchers/add",
+                            Description = "Add Tour Voucher",
+                            RequestUrlId = 26
+                        },
+                        new
+                        {
+                            UrlServiceId = 26,
+                            CurrentUrl = "/tour-vouchers/edit/:id",
+                            Description = "Edit Tour Voucher",
+                            RequestUrlId = 27
+                        },
+                        new
+                        {
+                            UrlServiceId = 27,
+                            CurrentUrl = "/students",
+                            Description = "List Students",
+                            RequestUrlId = 28
+                        },
+                        new
+                        {
+                            UrlServiceId = 28,
+                            CurrentUrl = "/students/add",
+                            Description = "Add Student",
+                            RequestUrlId = 29
+                        },
+                        new
+                        {
+                            UrlServiceId = 29,
+                            CurrentUrl = "/students/edit/:id",
+                            Description = "Edit Student",
+                            RequestUrlId = 30
+                        },
+                        new
+                        {
+                            UrlServiceId = 30,
+                            CurrentUrl = "/more/path/example",
+                            Description = "More Example Path",
+                            RequestUrlId = 31
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -2667,19 +2672,11 @@ namespace TravelUpdate.Migrations
 
             modelBuilder.Entity("TravelUpdate.Models.UrlService", b =>
                 {
-                    b.HasOne("TravelUpdate.Models.CurrentUrl", "CurrentUrl")
-                        .WithMany()
-                        .HasForeignKey("CurrentUrlId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("TravelUpdate.Models.RequestUrl", "RequestUrl")
                         .WithMany()
                         .HasForeignKey("RequestUrlId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("CurrentUrl");
 
                     b.Navigation("RequestUrl");
                 });

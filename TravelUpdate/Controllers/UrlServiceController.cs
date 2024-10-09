@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using TravelUpdate.Dal;
 using TravelUpdate.Models;
 using TravelUpdate.Models.InputModels;
@@ -21,156 +24,110 @@ namespace TravelUpdate.Controllers
         // URL Service Endpoints
 
         // GET: api/UrlService/urlservices
-        [HttpGet("urlservices")]
-        public async Task<ActionResult<IEnumerable<UrlServiceDto>>> GetUrlServices()
+        // GET: api/UrlService
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<UrlServiceDTO>>> GetUrlServices()
         {
             var urlServices = await _context.UrlServices
-                .Include(u => u.RequestUrl)
-                .Select(u => new UrlServiceDto
-                {
-                    UrlServiceId = u.UrlServiceId,
-                    CurrentUrl = u.CurrentUrl,
-                    Description = u.Description,
-                    RequestUrl = new RequestUrlDto
-                    {
-                        RequestUrlId = u.RequestUrl.RequestUrlId,
-                        Url = u.RequestUrl.Url,
-                        UrlName = u.RequestUrl.UrlName
-                    }
-                })
+                .Include(us => us.RequestUrl)
+                .Include(us => us.CurrentUrl)
                 .ToListAsync();
 
-            return Ok(urlServices);
+            var result = urlServices.Select(us => new UrlServiceDTO
+            {
+                UrlServiceId = us.UrlServiceId,
+                CurrentUrlId = us.CurrentUrl.CurrentUrlId,
+                RequestUrlId = us.RequestUrl.RequestUrlId,
+                Description = us.Description
+            }).ToList();
+
+            return Ok(result);
         }
 
-        // GET: api/UrlService/urlservices/{id}
-        [HttpGet("urlservices/{id}")]
-        public async Task<ActionResult<UrlServiceDto>> GetUrlService(int id)
+        // GET: api/UrlService/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<UrlServiceDTO>> GetUrlService(int id)
         {
             var urlService = await _context.UrlServices
-                .Include(u => u.RequestUrl)
-                .Select(u => new UrlServiceDto
-                {
-                    UrlServiceId = u.UrlServiceId,
-                    CurrentUrl = u.CurrentUrl,
-                    Description = u.Description,
-                    RequestUrl = new RequestUrlDto
-                    {
-                        RequestUrlId = u.RequestUrl.RequestUrlId,
-                        Url = u.RequestUrl.Url,
-                        UrlName = u.RequestUrl.UrlName
-                    }
-                })
-                .FirstOrDefaultAsync(u => u.UrlServiceId == id);
+                .Include(us => us.RequestUrl)
+                .Include(us => us.CurrentUrl)
+                .FirstOrDefaultAsync(us => us.UrlServiceId == id);
 
             if (urlService == null)
-                return NotFound();
-
-            return Ok(urlService);
-        }
-
-        // POST: api/UrlService/urlservices
-        [HttpPost("urlservices")]
-        public async Task<ActionResult<UrlServiceDto>> PostUrlService([FromBody] CreateUrlServiceDto createUrlServiceDto)
-        {
-            var requestUrl = await _context.RequestUrls.FirstOrDefaultAsync(r => r.RequestUrlId == createUrlServiceDto.RequestUrlId);
-            if (requestUrl == null)
-                return BadRequest("RequestUrl not found.");
-
-            var newUrlService = new UrlService
             {
-                CurrentUrl = createUrlServiceDto.CurrentUrl,
-                Description = createUrlServiceDto.Description,
-                RequestUrlId = createUrlServiceDto.RequestUrlId,
-                RequestUrl = requestUrl
+                return NotFound();
+            }
+
+            var result = new UrlServiceDTO
+            {
+                UrlServiceId = urlService.UrlServiceId,
+                CurrentUrlId = urlService.CurrentUrl.CurrentUrlId,
+                RequestUrlId = urlService.RequestUrl.RequestUrlId,
+                Description = urlService.Description
             };
 
-            _context.UrlServices.Add(newUrlService);
+            return Ok(result);
+        }
+
+        // POST: api/UrlService
+        [HttpPost]
+        public async Task<ActionResult<UrlServiceDTO>> PostUrlService(UrlServiceDTO urlServiceDTO)
+        {
+            var requestUrl = await _context.RequestUrls.FindAsync(urlServiceDTO.RequestUrlId);
+            var currentUrl = await _context.CurrentUrls.FindAsync(urlServiceDTO.CurrentUrlId);
+
+            if (requestUrl == null || currentUrl == null)
+            {
+                return BadRequest("Invalid RequestUrlId or CurrentUrlId.");
+            }
+
+            var urlService = new UrlService
+            {
+                CurrentUrlId = urlServiceDTO.CurrentUrlId,
+                RequestUrlId = urlServiceDTO.RequestUrlId,
+                Description = urlServiceDTO.Description
+            };
+
+            _context.UrlServices.Add(urlService);
             await _context.SaveChangesAsync();
 
-            //// Fetching the path from the HttpContext
-            //var request = HttpContext.Request;
-            //var path = request.Path.ToString();
-
-            //// Finding the UrlService based on the CurrentUrl
-            //var urlService = await _context.UrlServices
-            //    .Include(u => u.RequestUrl)
-            //    .FirstOrDefaultAsync(e => e.CurrentUrl == path);
-
-            //if (urlService == null)
-            //{
-            //    // Return NotFound if no matching UrlService is found
-            //    return NotFound("No UrlService found for the current URL.");
-            //}
-
-            //var urlServiceDto = new UrlServiceDto
-            //{
-            //    UrlServiceId = urlService.UrlServiceId,
-            //    CurrentUrl = urlService.CurrentUrl,
-            //    Description = urlService.Description,
-            //    RequestUrl = new RequestUrlDto
-            //    {
-            //        RequestUrlId = urlService.RequestUrl.RequestUrlId,
-            //        Url = urlService.RequestUrl.Url ?? "home", // Fallback to "home" if Url is null
-            //        UrlName = urlService.RequestUrl.UrlName
-            //    }
-            //};
-
-            // Return Created response with the DTO
-            //return CreatedAtAction(nameof(GetUrlService), new { id = newUrlService.UrlServiceId } );
-            return Ok("created");
+            return CreatedAtAction("GetUrlService", new { id = urlService.UrlServiceId }, urlServiceDTO);
         }
 
-        // PUT: api/UrlService/urlservices/{id}
-        [HttpPut("urlservices/{id}")]
-        public async Task<IActionResult> PutUrlService(int id, [FromBody] CreateUrlServiceDto updateUrlServiceDto)
+        // PUT: api/UrlService/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutUrlService(int id, UrlServiceDTO urlServiceDTO)
         {
+            if (id != urlServiceDTO.UrlServiceId)
+            {
+                return BadRequest();
+            }
+
             var urlService = await _context.UrlServices.FindAsync(id);
             if (urlService == null)
+            {
                 return NotFound();
+            }
 
-            var requestUrl = await _context.RequestUrls.FirstOrDefaultAsync(r => r.RequestUrlId == updateUrlServiceDto.RequestUrlId);
-            if (requestUrl == null)
-                return BadRequest("RequestUrl not found.");
-
-            urlService.CurrentUrl = updateUrlServiceDto.CurrentUrl;
-            urlService.Description = updateUrlServiceDto.Description;
-            urlService.RequestUrlId = updateUrlServiceDto.RequestUrlId;
-            urlService.RequestUrl = requestUrl;
+            urlService.CurrentUrlId = urlServiceDTO.CurrentUrlId;
+            urlService.RequestUrlId = urlServiceDTO.RequestUrlId;
+            urlService.Description = urlServiceDTO.Description;
 
             _context.Entry(urlService).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UrlServiceExists(id))
-                    return NotFound();
-                else
-                    throw;
-            }
-
-            // Get the current URL from HttpContext
-            var request = HttpContext.Request;
-            var currentPath = request.Path.ToString();
-
-            // Find the UrlService in the database using the current URL
-            var urlService1 = await _context.UrlServices
-                .Include(u => u.RequestUrl) // Include the RequestUrl for return
-                .FirstOrDefaultAsync(e => e.CurrentUrl == currentPath);
-
-            return Ok(new { Url = urlService1.RequestUrl.Url });
+            return NoContent();
         }
 
-        // DELETE: api/UrlService/urlservices/{id}
-        [HttpDelete("urlservices/{id}")]
+        // DELETE: api/UrlService/5
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUrlService(int id)
         {
             var urlService = await _context.UrlServices.FindAsync(id);
             if (urlService == null)
+            {
                 return NotFound();
+            }
 
             _context.UrlServices.Remove(urlService);
             await _context.SaveChangesAsync();
@@ -178,128 +135,36 @@ namespace TravelUpdate.Controllers
             return NoContent();
         }
 
-        private bool UrlServiceExists(int id)
-        {
-            return _context.UrlServices.Any(e => e.UrlServiceId == id);
-        }
 
-        // Request URL Endpoints
-
-        // GET: api/UrlService/requesturls
         [HttpGet("requesturls")]
-        public async Task<ActionResult<IEnumerable<RequestUrlDto>>> GetRequestUrls()
+        public async Task<ActionResult<IEnumerable<RequestUrlDTO>>> GetAllRequestUrls()
         {
-            var requestUrls = await _context.RequestUrls
-                .Select(r => new RequestUrlDto
-                {
-                    RequestUrlId = r.RequestUrlId,
-                    Url = r.Url,
-                    UrlName = r.UrlName
-                })
-                .ToListAsync();
+            var requestUrls = await _context.RequestUrls.ToListAsync();
 
-            return Ok(requestUrls);
-        }
-
-        // GET: api/UrlService/requesturls/{id}
-        [HttpGet("requesturls/{id}")]
-        public async Task<ActionResult<RequestUrlDto>> GetRequestUrl(int id)
-        {
-            var requestUrl = await _context.RequestUrls
-                .Select(r => new RequestUrlDto
-                {
-                    RequestUrlId = r.RequestUrlId,
-                    Url = r.Url,
-                    UrlName = r.UrlName
-                })
-                .FirstOrDefaultAsync(r => r.RequestUrlId == id);
-
-            if (requestUrl == null)
-                return NotFound();
-
-            return Ok(requestUrl);
-        }
-
-        // POST: api/UrlService/requesturls
-        [HttpPost("requesturls")]
-        public async Task<ActionResult<RequestUrlDto>> PostRequestUrl([FromBody] CreateRequestUrlDto createRequestUrlDto)
-        {
-            var newRequestUrl = new RequestUrl
+            var result = requestUrls.Select(r => new RequestUrlDTO
             {
-                Url = createRequestUrlDto.Url,
-                UrlName = createRequestUrlDto.UrlName
-            };
+                RequestUrlId = r.RequestUrlId,
+                Url = r.Url,
+                UrlName = r.UrlName
+            }).ToList();
 
-            _context.RequestUrls.Add(newRequestUrl);
-            await _context.SaveChangesAsync();
-
-            var requestUrlDto = new RequestUrlDto
-            {
-                RequestUrlId = newRequestUrl.RequestUrlId,
-                Url = newRequestUrl.Url,
-                UrlName = newRequestUrl.UrlName
-            };
-
-            return CreatedAtAction(nameof(GetRequestUrl), new { id = requestUrlDto.RequestUrlId }, requestUrlDto);
+            return Ok(result);
         }
 
-        // PUT: api/UrlService/requesturls/{id}
-        [HttpPut("requesturls/{id}")]
-        public async Task<IActionResult> PutRequestUrl(int id, [FromBody] CreateRequestUrlDto updateRequestUrlDto)
+        // GET: api/CurrentUrl
+        [HttpGet("currenturls")]
+        public async Task<ActionResult<IEnumerable<CurrentUrlDTO>>> GetAllCurrentUrls()
         {
-            if (id <= 0)
-                return BadRequest("Invalid RequestUrl ID.");
+            var currentUrls = await _context.CurrentUrls.ToListAsync();
 
-            var requestUrl = await _context.RequestUrls.FindAsync(id);
-            if (requestUrl == null)
-                return NotFound();
-
-            requestUrl.Url = updateRequestUrlDto.Url;
-            requestUrl.UrlName = updateRequestUrlDto.UrlName;
-
-            _context.Entry(requestUrl).State = EntityState.Modified;
-
-            try
+            var result = currentUrls.Select(c => new CurrentUrlDTO
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!RequestUrlExists(id))
-                    return NotFound();
-                else
-                    throw;
-            }
+                CurrentUrlId = c.CurrentUrlId,
+                Url = c.Url,
+                Title = c.Title
+            }).ToList();
 
-            // Get the current URL from HttpContext
-            var request = HttpContext.Request;
-            var currentPath = request.Path.ToString();
-
-            // Find the UrlService in the database using the current URL
-            var urlService = await _context.UrlServices
-                .Include(u => u.RequestUrl) // Include the RequestUrl for return
-                .FirstOrDefaultAsync(e => e.CurrentUrl == currentPath);
-
-            return Ok(new { Url = urlService.RequestUrl.Url });
-        }
-
-        // DELETE: api/UrlService/requesturls/{id}
-        [HttpDelete("requesturls/{id}")]
-        public async Task<IActionResult> DeleteRequestUrl(int id)
-        {
-            var requestUrl = await _context.RequestUrls.FindAsync(id);
-            if (requestUrl == null)
-                return NotFound();
-
-            _context.RequestUrls.Remove(requestUrl);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool RequestUrlExists(int id)
-        {
-            return _context.RequestUrls.Any(e => e.RequestUrlId == id);
+            return Ok(result);
         }
     }
 }
