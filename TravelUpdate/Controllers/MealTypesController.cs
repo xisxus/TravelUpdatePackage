@@ -61,7 +61,7 @@ namespace TravelUpdate.Controllers
 
             var request = HttpContext.Request;
             var rowPath = request.Path;
-            var path = RemoveLastSegment(rowPath);
+            var path = UrlTask.RemoveLastSegment(rowPath);
 
 
             var urlService = await _context.UrlServices
@@ -85,7 +85,7 @@ namespace TravelUpdate.Controllers
 
             var request = HttpContext.Request;
             var rowPath = request.Path;
-            var path = RemoveLastSegment(rowPath);
+            var path = UrlTask.RemoveLastSegment(rowPath);
 
 
             var urlService = await _context.UrlServices
