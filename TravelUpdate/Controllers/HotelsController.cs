@@ -22,23 +22,26 @@ namespace TravelUpdate.Controllers
             _context = context;
         }
         [HttpGet]
-        public IActionResult GetHotels()
+        public async Task<ActionResult<IEnumerable<HotelOutputModel>>> GetHotels()
         {
-            var hotels = _context.Hotels
+            var hotels = await _context.Hotels
+                .Include(h => h.HotelImages) // Include related HotelImages
+                .ToListAsync();
 
-                .Include(h => h.HotelImages)
-                .Include(h => h.HotelFacilities)
-                .Include(h => h.Rooms)
-                .Select(h => new
-                {
-                    h.HotelID,
-                    h.HotelName,
-                    h.HotelFacilities,
+            var hotelOutputModels = hotels.Select(h => new HotelOutputModel
+            {
+                HotelID = h.HotelID,
+                HotelName = h.HotelName,
+                Description = h.Description,
+                StarRating = h.StarRating,
+                Address = h.Address,
+                ContactInfo = h.ContactInfo,
+                HotelCode = h.HotelCode,
+                LocationID = h.LocationID,
+                ImageUrls = h.HotelImages.Select(hi => hi.ImageUrl).ToList() // Extract ImageUrls
+            }).ToList();
 
-                    h.HotelImages,
-                });
-
-            return Ok(hotels);
+            return Ok(hotelOutputModels);
         }
 
         // GET: api/Hotels/5
