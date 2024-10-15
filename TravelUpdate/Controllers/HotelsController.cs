@@ -21,27 +21,31 @@ namespace TravelUpdate.Controllers
         {
             _context = context;
         }
+
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<HotelOutputModel>>> GetHotels()
+        public IActionResult GetHotels()
         {
-            var hotels = await _context.Hotels
-                .Include(h => h.HotelImages) // Include related HotelImages
-                .ToListAsync();
+            var hotels = _context.Hotels
 
-            var hotelOutputModels = hotels.Select(h => new HotelOutputModel
-            {
-                HotelID = h.HotelID,
-                HotelName = h.HotelName,
-                Description = h.Description,
-                StarRating = h.StarRating,
-                Address = h.Address,
-                ContactInfo = h.ContactInfo,
-                HotelCode = h.HotelCode,
-                LocationID = h.LocationID,
-                ImageUrls = h.HotelImages.Select(hi => hi.ImageUrl).ToList() // Extract ImageUrls
-            }).ToList();
+                .Include(h => h.HotelImages)
+                .Include(h => h.HotelFacilities)
+                .Include(h => h.Rooms)
+                .Select(h => new
+                {
+                    h.HotelID,
+                    h.HotelName,
+                    h.Description,
+                    h.Address,
+                    h.StarRating,
+                    h.ContactInfo,
+                    h.LocationID,
+                    h.HotelCode,
+                    h.HotelFacilities,
+                    h.HotelImages,
 
-            return Ok(hotelOutputModels);
+                });
+
+            return Ok(hotels);
         }
 
         // GET: api/Hotels/5
@@ -57,9 +61,15 @@ namespace TravelUpdate.Controllers
                 {
                     h.HotelID,
                     h.HotelName,
+                    h.Description,
+                    h.Address,
+                    h.StarRating,
+                    h.ContactInfo,
+                    h.LocationID,
+                    h.HotelCode,
                     h.HotelFacilities,
-
                     h.HotelImages,
+
                 })
                 .FirstOrDefault(h => h.HotelID == ID);
 
@@ -271,3 +281,4 @@ namespace TravelUpdate.Controllers
         }
     }
 }
+
