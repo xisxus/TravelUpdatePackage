@@ -18,6 +18,13 @@ namespace TravelUpdate.Controllers
             _context = context;
         }
 
+
+        // GET: api/MealTypes
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<MealType>>> GetMealTypes()
+        {
+            return await _context.MealTypes.ToListAsync();
+        }
         // GET: api/MealTypes/5
         [HttpGet("{id}")]
         public async Task<ActionResult<MealType>> GetMealType(int id)

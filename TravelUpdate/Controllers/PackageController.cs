@@ -1379,11 +1379,11 @@ namespace TravelUpdate.Controllers
 
 
         #endregion
-      
+
         #region PackFood
 
-        [HttpPost("add-package-food-item/{packageID}")]
-        public async Task<IActionResult> AddPackageFoodItem( int packageID, PackageFoodItemInsertModel model)
+        [HttpPost("packagefood/add/{packageID}")]
+        public async Task<IActionResult> AddPackageFoodItem(int packageID, PackageFoodItemInsertModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -1400,7 +1400,7 @@ namespace TravelUpdate.Controllers
                 PackageDayNumber = model.PackageDayNumber,
                 FoodQuantity = model.FoodQuantity,
                 FoodUnitPrice = model.FoodUnitPrice,
-                ItemTotalCost = itemTotalCost, 
+                ItemTotalCost = itemTotalCost,
                 ScheduleTime = model.ScheduleTime
             };
 
@@ -1421,7 +1421,7 @@ namespace TravelUpdate.Controllers
 
             if (urlService == null)
             {
-                 requestUrl =  "dashboard";
+                requestUrl = "dashboard";
             }
             else
             {
@@ -1429,9 +1429,10 @@ namespace TravelUpdate.Controllers
             }
 
 
-            return CreatedAtAction(nameof(AddPackageFoodItem), new 
-            { packageFoodItemId = packageFoodItem.PackageFoodItemID
-                
+            return CreatedAtAction(nameof(AddPackageFoodItem), new
+            {
+                packageFoodItemId = packageFoodItem.PackageFoodItemID
+
             }, new
             {
                 success = true,
@@ -1439,10 +1440,10 @@ namespace TravelUpdate.Controllers
                 packageFoodItemId = packageFoodItem.PackageFoodItemID,
                 packageId = packageID,
                 Url = requestUrl
-        });
+            });
         }
 
-        [HttpGet("get-package-food-items/{packageId}")]
+        [HttpGet("packagefooditem/get/{packageId}")]
         public async Task<IActionResult> GetPackageFoodItems(int packageId)
         {
             var foodItems = await _context.PackageFoodItems
